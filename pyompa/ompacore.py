@@ -29,9 +29,11 @@ class OMPAProblem(object):
         self.process_params()
 
     def prep_watermass_usagepenalty_mat(self):
-        watermass_usagepenalty = np.zeros((len(self.obs_df),
-                                           len(self.watermassnames)))
-        for watermassidx,watermassname in enumerate(self.watermassnames):
+        obs_df = self.obs_df
+        watermassnames = self.watermassnames
+        watermass_usagepenalty = np.zeros((len(obs_df),
+                                           len(watermassnames)))
+        for watermassidx,watermassname in enumerate(watermassnames):
             if watermassname in self.watermassname_to_usagepenaltyfunc:
                 lat = np.array(obs_df["latitude"])
                 sig0 = np.array(obs_df["sig0"])
