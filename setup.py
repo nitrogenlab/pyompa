@@ -9,5 +9,6 @@ if __name__== '__main__':
           packages=['pyompa'],
           setup_requires=[],
           install_requires=['numpy', 'pandas', 'cvxpy', 'scipy'],
+          extras_require={'altair': ['altair']},
           scripts=[],
           name='pyompa')
