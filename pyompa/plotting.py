@@ -26,6 +26,7 @@ def plot_water_mass_fractions(latitudes, depths,
     if (total_oxygen_deficit is not None):
         plt.sca(ax[num_watermasses])
         plt.scatter(latitudes, depths, c=total_oxygen_deficit)
+        plt.ylim(plt.ylim()[1], plt.ylim()[0])
         plt.colorbar()
         plt.xlabel("latitude")
         plt.title("oxygen deficit")
@@ -33,6 +34,7 @@ def plot_water_mass_fractions(latitudes, depths,
         plt.sca(ax[num_watermasses+1+i])
         plt.scatter(latitudes, depths,
                     c=1.0/effective_conversion_ratios[:,i])
+        plt.ylim(plt.ylim()[1], plt.ylim()[0])
         plt.colorbar()
         plt.xlabel("latitude")
         plt.title(converted_params_to_use[i]
