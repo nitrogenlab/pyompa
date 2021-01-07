@@ -51,7 +51,7 @@ class ThermoclineArrayOMPAProblem(object):
         self.tc_step = tc_step
         self.endmemnames_to_use = endmemnames_to_use
         self.endmemname_to_df = endmemname_to_df
-        self.obs_df
+        self.obs_df = obs_df
         self.paramsandweighting_conserved = paramsandweighting_conserved
         self.paramsandweighting_converted = paramsandweighting_converted
         self.conversionratios = conversionratios
