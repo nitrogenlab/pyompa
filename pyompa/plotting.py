@@ -1,6 +1,7 @@
 from __future__ import division, print_function
 from matplotlib import pyplot as plt
 import numpy as np
+import pandas as pd
 
 
 def plot_water_mass_fractions(latitudes, depths,
