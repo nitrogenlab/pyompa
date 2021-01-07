@@ -3,55 +3,49 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 
-def plot_water_mass_fractions(ompa_problem, yaxis="depth"):
-    num_watermasses = ompa_problem.water_mass_fractions.shape[1]
+def plot_water_mass_fractions(latitudes, depths,
+    water_mass_fractions, watermassnames, total_oxygen_deficit,
+    converted_params_to_use, effective_conversion_ratios):
+    num_watermasses = water_mass_fractions.shape[1]
     num_figs = (num_watermasses +
-                (1+len(ompa_problem.converted_params_to_use)
-                   if ompa_problem.total_oxygen_deficit is not None else 0 ))
-    fig, ax = plt.subplots(nrows=1,
-        ncols=num_figs, figsize=(5*num_figs,4))
+                (1+len(converted_params_to_use)
+                 if total_oxygen_deficit is not None else 0))
+    print("numfigs:", num_figs)
+    fig, ax = plt.subplots(nrows=1, ncols=num_figs, figsize=(5*num_figs,4))
     for i in range(num_watermasses):
         plt.sca(ax[i])
-        plt.scatter(ompa_problem.obs_df["latitude"],
-                    ompa_problem.obs_df[yaxis],
-                    c=ompa_problem.water_mass_fractions[:,i])
+        plt.scatter(latitudes, depths, c=water_mass_fractions[:,i])
         plt.xlabel("latitude")
         if (i==0):
             plt.ylabel("depth")
         plt.ylim(plt.ylim()[1], plt.ylim()[0])
         plt.colorbar()
-        plt.title(ompa_problem.watermass_df["watermassname"][i])
-    if (ompa_problem.total_oxygen_deficit is not None):
+        plt.title(watermassnames[i])
+    if (total_oxygen_deficit is not None):
         plt.sca(ax[num_watermasses])
-        plt.scatter(ompa_problem.obs_df["latitude"],
-                    ompa_problem.obs_df[yaxis],
-                    c=ompa_problem.total_oxygen_deficit)
+        plt.scatter(latitudes, depths, c=total_oxygen_deficit)
         plt.colorbar()
         plt.xlabel("latitude")
         plt.title("oxygen deficit")
-    for i in range(len(ompa_problem.converted_params_to_use)):
+    for i in range(len(converted_params_to_use)):
         plt.sca(ax[num_watermasses+1+i])
-        plt.scatter(ompa_problem.obs_df["latitude"],
-                    ompa_problem.obs_df[yaxis],
-                    c=1.0/ompa_problem.effective_conversion_ratios[:,i])
+        plt.scatter(latitudes, depths,
+                    c=1.0/effective_conversion_ratios[:,i])
         plt.colorbar()
         plt.xlabel("latitude")
-        plt.title(ompa_problem.converted_params_to_use[i]
+        plt.title(converted_params_to_use[i]
                   +" \nconversion ratio (relative to oxygen)")
     plt.show()
 
 
-def plot_residuals(ompa_problem):
-    num_params = ompa_problem.param_residuals.shape[1]
-    fig, ax = plt.subplots(nrows=1, ncols=num_params,
-                           figsize=(5*num_params,4))
-    params_to_use = (ompa_problem.conserved_params_to_use
-                     + ompa_problem.converted_params_to_use)
-    for i in range(ompa_problem.param_residuals.shape[1]):
+def plot_residuals(param_residuals, params_to_use, latitudes, depths):
+    num_params = param_residuals.shape[1]
+    fig, ax = plt.subplots(nrows=1, ncols=num_params, figsize=(5*num_params,4))
+    for i in range(param_residuals.shape[1]):
         plt.sca(ax[i])
-        plt.scatter(x=ompa_problem.obs_df["latitude"],
-                    y=ompa_problem.obs_df["depth"],
-                    c=np.abs(ompa_problem.param_residuals[:,i]),
+        plt.scatter(x=latitudes,
+                    y=depths,
+                    c=np.abs(param_residuals[:,i]),
                     cmap="viridis")
         plt.colorbar()
         plt.xlabel("latitude")
