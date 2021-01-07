@@ -78,6 +78,8 @@ class OMPAProblem(object):
         conserved_params_to_use = self.conserved_params_to_use
         converted_params_to_use = self.converted_params_to_use
         weighting = np.array(self.conserved_weighting+self.converted_weighting)
+        smoothness_lambda = self.smoothness_lambda
+
         #conversion_ratios has dimensions:
         # num_conversion_ratios x num_converted_params
         conversion_ratios = np.array([[self.conversionratios[param][i]
@@ -105,7 +107,7 @@ class OMPAProblem(object):
         A = A*weighting[None,:]
         b = b*weighting[None,:]
 
-        if (self.smoothness_lambda is not None):
+        if (smoothness_lambda is not None):
             pairs_matrix = make_pairs_matrix(
               obs_df=obs_df,
               depth_metric="depth",
