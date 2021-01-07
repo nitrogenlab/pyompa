@@ -12,7 +12,6 @@ def plot_water_mass_fractions(latitudes, depths,
     num_figs = (num_watermasses +
                 (1+len(converted_params_to_use)
                  if total_oxygen_deficit is not None else 0))
-    print("numfigs:", num_figs)
     fig, ax = plt.subplots(nrows=1, ncols=num_figs, figsize=(5*num_figs,4))
     for i in range(num_watermasses):
         plt.sca(ax[i])
