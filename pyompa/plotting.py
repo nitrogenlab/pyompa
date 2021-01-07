@@ -142,11 +142,11 @@ def latdepth_scatterplot(basechart, selection,
     return to_return
            
 
-def wrap_scatterplots(scatterplots, resolve_scale='shared'):
+def wrap_scatterplots(scatterplots, resolve_scale='shared', rowsize=7):
     hconcats = [
-        alt.hconcat(*scatterplots[i:i+ROWSIZE]).resolve_scale(
+        alt.hconcat(*scatterplots[i:i+rowsize]).resolve_scale(
             color=resolve_scale)
-        for i in range(0,len(scatterplots), ROWSIZE)  
+        for i in range(0,len(scatterplots), rowsize)  
     ]
     return alt.vconcat(*hconcats)
 
