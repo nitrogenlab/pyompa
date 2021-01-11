@@ -226,8 +226,8 @@ class OMPAProblem(object):
         # to un-scale it here. Also note deltas_due_to_oxygen_deficits has
         # already been subtracted
         old_param_residuals = b - self.water_mass_fractions@existing_endmemmat
-        assert np.testing.assert_almost_equal(
-            old_param_residuals, self.param_residuals, decimal=5)
+        np.testing.assert_almost_equal(old_param_residuals,
+                                       self.param_residuals, decimal=5)
 
         #Now solve for a better end-member mat
         weighting = self.get_param_weighting()
