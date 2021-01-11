@@ -21,6 +21,7 @@ def plot_water_mass_fractions(latitudes, depths,
             plt.ylabel("depth")
         plt.ylim(plt.ylim()[1], plt.ylim()[0])
         plt.colorbar()
+        plt.clim(0.0, 1.0)
         plt.title(watermassnames[i])
     if (total_oxygen_deficit is not None):
         plt.sca(ax[num_watermasses])
