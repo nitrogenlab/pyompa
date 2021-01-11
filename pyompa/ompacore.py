@@ -231,11 +231,11 @@ class OMPAProblem(object):
 
         #Now solve for a better end-member mat
         weighting = self.get_param_weighting()
-        new_endmemmat =  cp.Variable(shape=existing_endmemmat.shape)  
+        new_endmemmat_var =  cp.Variable(shape=existing_endmemmat.shape)  
         
         #keeping the water_mass_fractions, what are the best end members?
         obj = cp.Minimize(
-            cp.sum_squares(self.water_mass_fractions@new_endmemmat
+            cp.sum_squares(self.water_mass_fractions@new_endmemmat_var
                            - b*weighting[None,:]))
         constraints = [] #no constraints for now
         prob = cp.Problem(obj, constraints)
@@ -247,7 +247,7 @@ class OMPAProblem(object):
         if (prob.status=="infeasible"):
             return None
         else:
-            new_endmemmat = new_endmemmat/weighting[None,:]
+            new_endmemmat = new_endmemmat.value/weighting[None,:]
             #Sanity check that the residuals got better
             new_param_residuals = b - self.water_mass_fractions@new_endmemmat 
             new_param_resid_wsumsq =\
