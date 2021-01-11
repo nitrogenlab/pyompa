@@ -266,7 +266,7 @@ class OMPAProblem(object):
              zip(self.conserved_params_to_use+self.converted_params_to_use,
                  new_endmemmat.T) ])) 
 
-            return new_endmemmat_df
+            return new_endmemmat_df, new_param_residuals
 
     def core_solve(self, A, b, num_conversion_ratios, num_converted_params,
                    pairs_matrix, watermass_usagepenalty,
