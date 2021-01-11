@@ -102,9 +102,9 @@ class OMPAProblem(object):
         self.watermass_usagepenalty = watermass_usagepenalty
 
         #Prepare A
-        print("Conversion ratios:\n"+str(conversion_ratios))
         conversion_ratios, conversion_ratio_rows =\
             get_conversion_ratio_rows_of_A()
+        print("Conversion ratios:\n"+str(conversion_ratios))
         #add a row to A for the ratios
         A = np.concatenate([self.get_endmem_mat(),
                             conversion_ratio_rows], axis=0)
