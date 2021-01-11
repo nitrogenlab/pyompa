@@ -246,7 +246,7 @@ class OMPAProblem(object):
 
         if (prob.status=="infeasible"):
             return None
-        else
+        else:
             new_endmemmat = new_endmemmat/weighting[None,:]
             #Sanity check that the residuals got better
             new_param_residuals = b - self.water_mass_fractions@new_endmemmat 
