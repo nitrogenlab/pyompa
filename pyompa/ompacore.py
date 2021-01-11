@@ -103,7 +103,7 @@ class OMPAProblem(object):
 
         #Prepare A
         conversion_ratios, conversion_ratio_rows =\
-            get_conversion_ratio_rows_of_A()
+            self.get_conversion_ratio_rows_of_A()
         print("Conversion ratios:\n"+str(conversion_ratios))
         #add a row to A for the ratios
         A = np.concatenate([self.get_endmem_mat(),
