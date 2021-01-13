@@ -184,7 +184,7 @@ class OMPAProblem(object):
         
         (x, water_mass_fractions,
          oxygen_deficits,
-         residuals_squared, prob) = self.core_solve(
+         resid_wsumsq, prob) = self.core_solve(
             A=A, b=b,
             num_conversion_ratios=self.num_conversion_ratios,
             num_converted_params=len(self.converted_params_to_use),
@@ -194,7 +194,7 @@ class OMPAProblem(object):
             smoothness_lambda=smoothness_lambda)
         
         if (water_mass_fractions is not None):
-            print("objective:", np.sum(residuals_squared))
+            print("objective:", resid_wsumsq)
             param_reconstruction = (x@A)/weighting[None,:]
             param_residuals = b/weighting[None,:] - param_reconstruction
         else:
@@ -230,7 +230,7 @@ class OMPAProblem(object):
                   status=prob.status,
                   water_mass_fractions=water_mass_fractions,
                   oxygen_deficits=oxygen_deficits,
-                  residuals_squared=residuals_squared,
+                  resid_wsumsq=resid_wsumsq,
                   param_residuals=param_residuals,
                   total_oxygen_deficit=total_oxygen_deficit,
                   effective_conversion_ratios=effective_conversion_ratios)
@@ -357,21 +357,24 @@ class OMPAProblem(object):
         print("optimal value", prob.value)
 
         if (prob.status=="infeasible"):
+            raise RuntimeError("Optimization failed - "
+                               +"try lowering the parameter weights?")
             water_mass_fractions = None
             oxygen_deficits = None
-            residuals_squared = None
+            resid_wsumsq = None
         else:
-          water_mass_fractions = x.value[:,:num_watermasses]
-          if (num_converted_params > 0):
-             oxygen_deficits = x.value[:,num_watermasses:]
-          else:
-             oxygen_deficits = None
-          residuals_squared = np.sum(np.square((x.value@A) - b), axis=-1)
+            water_mass_fractions = x.value[:,:num_watermasses]
+            if (num_converted_params > 0):
+               oxygen_deficits = x.value[:,num_watermasses:]
+            else:
+               oxygen_deficits = None
+            #weighted sum of squared of the residuals
+            resid_wsumsq = np.sum(np.square((x.value@A) - b)) 
         
         return (x.value,
                 water_mass_fractions,
                 oxygen_deficits,
-                residuals_squared, prob)
+                resid_wsumsq, prob)
 
     def iteratively_refine_ompa_solns(self, init_endmember_df, num_iterations):
         assert num_iterations >= 1,\
