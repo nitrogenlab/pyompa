@@ -206,7 +206,7 @@ class OMPAProblem(object):
             total_oxygen_deficit = None
             effective_conversion_ratios = None
 
-        return OMPASolution(endmember_df=endmember_df,
+        return OMPASoln(endmember_df=endmember_df,
                   ompa_problem=self,
                   watermassnames=watermassnames,
                   status=prob.status,
@@ -353,20 +353,19 @@ class OMPAProblem(object):
                 oxygen_deficits,
                 residuals_squared, prob)
 
-
-def iteratively_refine_ompa_endmembers(ompa_problem, init_endmember_df,
-                                       num_iterations):
-    iter_to_ompa_solns = []
-    iter_to_endmemdf = [init_endmember_df]
-    for i in range(num_iterations):
-        print("On iteration",i+1)
-        ompa_solns.append(ompa_problem.solve(
-            endmember_df=iter_to_endmemdf[-1]))
-        if (i < num_iterations-1):
-            iter_to_endmemdf.append(
-                ompa_problem.construct_ideal_endmembers(
-                    ompa_soln=iter_to_ompa_solns[-1])) 
-    return iter_to_ompa_solns, iter_to_endmemdf 
+    def iteratively_refine_ompa_endmembers(self, init_endmember_df,
+                                           num_iterations):
+        iter_to_ompa_solns = []
+        iter_to_endmemdf = [init_endmember_df]
+        for i in range(num_iterations):
+            print("On iteration",i+1)
+            ompa_solns.append(self.solve(
+                endmember_df=iter_to_endmemdf[-1]))
+            if (i < num_iterations-1):
+                iter_to_endmemdf.append(
+                    self.construct_ideal_endmembers(
+                        ompa_soln=iter_to_ompa_solns[-1])) 
+        return iter_to_ompa_solns, iter_to_endmemdf 
 
 
 def spherical_to_surface_cartesian(lat, lon):
