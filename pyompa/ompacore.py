@@ -18,9 +18,10 @@ class OMPASoln(object):
         self.__dict__.update(kwargs)
 
     def iteratively_refine_ompa_soln(self, num_iterations):
+        init_endmember_df = self.ompa_problem.construct_ideal_endmembers(
+            ompa_soln=self)
         ompa_solns = self.ompa_problem.iteratively_refine_ompa_solns(
-            init_endmember_df=
-                self.ompa_problem.construct_ideal_endmembers(ompa_soln=self),
+            init_endmember_df=init_endmember_df,
             num_iterations=num_iterations)
         return [self]+ompa_solns
 
@@ -228,6 +229,8 @@ class OMPAProblem(object):
 
     def construct_ideal_endmembers(self, ompa_soln):
 
+        print("Constructing ideal end members")
+
         b = self.get_b() # dims of num_obs X params
 
         if (ompa_soln.oxygen_deficits is not None):
@@ -269,7 +272,8 @@ class OMPAProblem(object):
         print("optimal value", prob.value)
 
         if (prob.status=="infeasible"):
-            return None
+            raise RuntimeError("Something went wrong "
+                               +"- the optimization failed")
         else:
             new_endmemmat = new_endmemmat_var.value/weighting[None,:]
             #Sanity check that the residuals got better
@@ -290,9 +294,7 @@ class OMPAProblem(object):
              +[(paramname, values) for paramname,values in
              zip(self.conserved_params_to_use+self.converted_params_to_use,
                  new_endmemmat.T) ])) 
-
-            return (new_endmemmat_df, new_param_residuals,
-                    new_param_resid_wsumsq)
+            return new_endmemmat_df
 
     def core_solve(self, A, b, num_conversion_ratios, num_converted_params,
                    pairs_matrix, watermass_usagepenalty,
