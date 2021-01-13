@@ -116,7 +116,7 @@ class OMPAProblem(object):
             self.get_conversion_ratio_rows_of_A()
         print("Conversion ratios:\n"+str(conversion_ratios))
         #add a row to A for the ratios
-        A = np.concatenate([self.get_endmem_mat(),
+        A = np.concatenate([self.get_endmem_mat(endmember_df),
                             conversion_ratio_rows], axis=0)
 
         #prepare b
