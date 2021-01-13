@@ -58,6 +58,11 @@ class OMPAProblem(object):
               list(x) for x in zip(*self.paramsandweighting_converted)]
         else:
             self.converted_params_to_use, self.converted_weighting = [], []
+
+        if (max(self.converted_weighting+self.conserved_weighting) > 100):
+            print("Warning: having very large param weights can lead to"
+                  +" instability in the optimizer! Consider scaling down"
+                  +" your weights")
         
         #make sure every parameter in converted_params_to_use is specified in
         # convertedparams_ratios:
@@ -197,11 +202,14 @@ class OMPAProblem(object):
 
         if (oxygen_deficits is not None):
             #sanity check the signs of the oxygen deficits; for each entry they
-            # should either be all positive or all negative
+            # should either be all positive or all negative, within numerical
+            # precision
             for oxygen_deficit in oxygen_deficits:
                 if (len(oxygen_deficit) > 0):
-                    assert all(oxygen_deficit > -1e-6)\
-                          or all(oxygen_deficit < 1e-6), oxygen_deficit
+                    if ((all(oxygen_deficit > -1e-3) or
+                         all(oxygen_deficit < 1e-3))==False):
+                        print("WARNING: potential sign inconsistency in"
+                              +" oxygen deficits:", oxygen_deficit)
             total_oxygen_deficit = np.sum(oxygen_deficits, axis=-1)
             #proportions of oxygen use at differnet ratios
             oxygen_usage_proportions = (oxygen_deficits/
@@ -370,7 +378,7 @@ class OMPAProblem(object):
             "num_iterations must be >= 1; is "+str(num_iterations)
         print("On iteration 1")
         ompa_solns = [self.solve(endmember_df=init_endmember_df)]
-        for i in range(num_iterations-1):
+        for i in range(1,num_iterations):
             print("On iteration "+str(i+1))
             new_endmember_df =\
                 self.construct_ideal_endmembers(ompa_soln=ompa_solns[-1]) 
