@@ -16,6 +16,15 @@ class OMPASoln(object):
         self.converted_params_to_use = ompa_problem.converted_params_to_use   
         self.__dict__.update(kwargs)
 
+    def iteratively_refine_ompa_endmembers(self, num_iterations):
+        iter_to_ompa_solns, iter_to_endmemdf =\
+            self.ompa_problem.iteratively_refine_ompa_endmembers(
+                init_endmember_df=self.endmember_df,
+                num_iterations=num_iterations)
+        iter_to_ompa_solns = [self]+iter_to_ompa_solns
+        iter_to_endmemdf = [self.endmember_df]+iter_to_endmemdf
+        return iter_to_ompa_solns, iter_to_endmemdf 
+
 
 class OMPAProblem(object):
     """
@@ -357,15 +366,14 @@ class OMPAProblem(object):
     def iteratively_refine_ompa_endmembers(self, init_endmember_df,
                                            num_iterations):
         iter_to_ompa_solns = []
-        iter_to_endmemdf = [init_endmember_df]
+        iter_to_endmemdf = []
         for i in range(num_iterations):
             print("On iteration",i+1)
             ompa_solns.append(self.solve(
                 endmember_df=iter_to_endmemdf[-1]))
-            if (i < num_iterations-1):
-                iter_to_endmemdf.append(
-                    self.construct_ideal_endmembers(
-                        ompa_soln=iter_to_ompa_solns[-1])) 
+            iter_to_endmemdf.append(
+                self.construct_ideal_endmembers(
+                    ompa_soln=iter_to_ompa_solns[-1])) 
         return iter_to_ompa_solns, iter_to_endmemdf 
 
 
