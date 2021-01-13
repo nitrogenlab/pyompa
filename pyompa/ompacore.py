@@ -10,7 +10,7 @@ from collections import OrderedDict
 class OMPASoln(object):
 
     def __init__(self, ompa_problem, **kwargs):
-        ompa_problem = ompa_problem
+        self.ompa_problem = ompa_problem
         self.conserved_params_to_use = ompa_problem.conserved_params_to_use,
         self.converted_params_to_use = ompa_problem.converted_params_to_use,   
         self.__dict__.update(kwargs)
