@@ -7,10 +7,10 @@ import altair as alt
 
 def plot_water_mass_fractions(latitudes, depths,
     water_mass_fractions, watermassnames, total_oxygen_deficit,
-    converted_params_to_use, effective_conversion_ratios):
+    effective_conversion_ratios, converted_param_names):
     num_watermasses = water_mass_fractions.shape[1]
     num_figs = (num_watermasses +
-                (1+len(converted_params_to_use)
+                (1+len(converted_param_names)
                  if total_oxygen_deficit is not None else 0))
     fig, ax = plt.subplots(nrows=1, ncols=num_figs, figsize=(5*num_figs,4))
     for i in range(num_watermasses):
@@ -30,19 +30,19 @@ def plot_water_mass_fractions(latitudes, depths,
         plt.colorbar()
         plt.xlabel("latitude")
         plt.title("oxygen deficit")
-    for i in range(len(converted_params_to_use)):
+    for i in range(len(converted_param_names)):
         plt.sca(ax[num_watermasses+1+i])
         plt.scatter(latitudes, depths,
                     c=1.0/effective_conversion_ratios[:,i])
         plt.ylim(plt.ylim()[1], plt.ylim()[0])
         plt.colorbar()
         plt.xlabel("latitude")
-        plt.title(converted_params_to_use[i]
+        plt.title(converted_param_names[i]
                   +" \nconversion ratio (relative to oxygen)")
     plt.show()
 
 
-def plot_residuals(param_residuals, params_to_use, latitudes, depths):
+def plot_residuals(param_residuals, param_names, latitudes, depths):
     num_params = param_residuals.shape[1]
     fig, ax = plt.subplots(nrows=1, ncols=num_params, figsize=(5*num_params,4))
     for i in range(param_residuals.shape[1]):
@@ -56,7 +56,7 @@ def plot_residuals(param_residuals, params_to_use, latitudes, depths):
         if (i==0):
             plt.ylabel("depth")
         plt.ylim(plt.ylim()[1], plt.ylim()[0])
-        plt.title(params_to_use[i])
+        plt.title(param_names[i])
     plt.show()
 
 
@@ -76,7 +76,7 @@ def plot_thermocline_water_mass_fractions(ompa_problems_arr):
     water_mass_fractions = np.concatenate([
             x.water_mass_fractions for x in ompa_problems_arr], axis=0)
     watermassnames = list(ompa_problems_arr[0].watermass_df["watermassname"])
-    converted_params_to_use = ompa_problems_arr[0].converted_params_to_use
+    converted_param_names = ompa_problems_arr[0].converted_params_to_use
     if (ompa_problems_arr[0].total_oxygen_deficit is not None):
         total_oxygen_deficit = np.concatenate([x.total_oxygen_deficit
                                            for x in ompa_problems_arr], axis=0)
@@ -92,7 +92,7 @@ def plot_thermocline_water_mass_fractions(ompa_problems_arr):
         water_mass_fractions=water_mass_fractions,
         watermassnames=watermassnames,
         total_oxygen_deficit=total_oxygen_deficit,
-        converted_params_to_use=converted_params_to_use,
+        converted_param_names=converted_param_names,
         effective_conversion_ratios=effective_conversion_ratios)
 
 
@@ -100,7 +100,7 @@ def plot_thermocline_residuals(ompa_problems_arr):
 
     param_residuals = np.concatenate([
             x.param_residuals for x in ompa_problems_arr], axis=0)
-    params_to_use = (ompa_problems_arr[0].conserved_params_to_use
+    param_names = (ompa_problems_arr[0].conserved_params_to_use
                      +ompa_problems_arr[0].converted_params_to_use)
     latitudes = np.concatenate([
             np.array(x.obs_df["latitude"]) for x in ompa_problems_arr])
@@ -109,7 +109,7 @@ def plot_thermocline_residuals(ompa_problems_arr):
 
     plot_residuals(
         param_residuals=param_residuals,
-        params_to_use=params_to_use,
+        param_names=params_to_use,
         latitudes=latitudes,
         depths=depths)
 
@@ -185,18 +185,18 @@ def build_altair_viz(ompa_problem, chart_width=200, chart_height=200):
             altairdf[converted_param_name+" eff conv ratio"] =\
                 1.0/ompa_problem.effective_conversion_ratios[:,i]
 
-    params_to_use = (ompa_problem.converted_params_to_use
+    param_names = (ompa_problem.converted_params_to_use
                      +ompa_problem.conserved_params_to_use)
     for param_idx in range(ompa_problem.param_residuals.shape[1]):
-        param_name = params_to_use[param_idx]
+        param_name = param_names[param_idx]
         altairdf[param_name+"_resid"] =\
           ompa_problem.param_residuals[:,param_idx]
 
     interval_selection = alt.selection_interval()
-    tooltip_columns = (params_to_use
+    tooltip_columns = (param_names
       + ["latitude", "longitude"]
       + watermass_names
-      + [x+"_resid" for x in params_to_use]
+      + [x+"_resid" for x in param_names]
       + (["total O2 deficit"]+
          [x+" eff conv ratio" for x in
           ompa_problem.converted_params_to_use]
@@ -236,15 +236,15 @@ def build_altair_viz(ompa_problem, chart_width=200, chart_height=200):
                 altairdf=altairdf)
 
     the_pp_scatterplots = []
-    for i in range(len(params_to_use)):
-        for j in range(i+1,len(params_to_use)):
+    for i in range(len(param_names)):
+        for j in range(i+1,len(param_names)):
             the_pp_scatterplots.append(
                 pp_scatterplot(
                     obs_basechart=obs_basechart,
                     selection=interval_selection,
                     watermass_basechart=watermass_basechart,
-                    property1=params_to_use[i],
-                    property2=params_to_use[j],
+                    property1=param_names[i],
+                    property2=param_names[j],
                     opacity=0.2)
             )
     
@@ -255,7 +255,7 @@ def build_altair_viz(ompa_problem, chart_width=200, chart_height=200):
             property_name=property_name+"_resid",
             altairdf=altairdf,
             zerocenter=True)
-        for property_name in params_to_use]
+        for property_name in param_names]
 
     prop_scatterplots = [
         latdepth_scatterplot(
@@ -264,7 +264,7 @@ def build_altair_viz(ompa_problem, chart_width=200, chart_height=200):
             property_name=property_name,
             altairdf=altairdf,
             zerocenter=False)
-        for property_name in params_to_use]
+        for property_name in param_names]
 
     conversion_ratio_scatterplots = [
       latdepth_scatterplot(
@@ -334,13 +334,13 @@ def build_thermocline_altair_viz(ompa_problems_arr,
         altairdf[param_name+"_resid"] = np.concatenate([
           x.param_residuals[:,param_idx] for x in ompa_problems_arr])          
 
-    params_to_use = (ompa_problems_arr[0].conserved_params_to_use
+    param_names = (ompa_problems_arr[0].conserved_params_to_use
                      +ompa_problems_arr[0].converted_params_to_use)
     interval_selection = alt.selection_interval()
     tooltip_columns = (list(param_names)
       + ["latitude", "longitude"]
       + list(watermass_names)
-      + [x+"_resid" for x in params_to_use]
+      + [x+"_resid" for x in param_names]
       + (["total O2 deficit"]+
          [x+" eff conv ratio" for x in
           ompa_problems_arr[0].converted_params_to_use]
@@ -385,15 +385,15 @@ def build_thermocline_altair_viz(ompa_problems_arr,
                 altairdf=altairdf)
 
     the_pp_scatterplots = []
-    for i in range(len(params_to_use)):
-        for j in range(i+1,len(params_to_use)):
+    for i in range(len(param_names)):
+        for j in range(i+1,len(param_names)):
             the_pp_scatterplots.append(
                 pp_scatterplot(
                     obs_basechart=obs_basechart,
                     selection=interval_selection,
                     watermass_basechart=watermass_basechart,
-                    property1=params_to_use[i],
-                    property2=params_to_use[j],
+                    property1=param_names[i],
+                    property2=param_names[j],
                     opacity=1)
             )
     
@@ -404,7 +404,7 @@ def build_thermocline_altair_viz(ompa_problems_arr,
             property_name=property_name+"_resid",
             altairdf=altairdf,
             zerocenter=True)
-        for property_name in params_to_use]
+        for property_name in param_names]
 
     prop_scatterplots = [
         latdepth_scatterplot(
@@ -413,7 +413,7 @@ def build_thermocline_altair_viz(ompa_problems_arr,
             property_name=property_name,
             altairdf=altairdf,
             zerocenter=True)
-        for property_name in params_to_use]
+        for property_name in param_names]
 
     conversion_ratio_scatterplots = [
       latdepth_scatterplot(

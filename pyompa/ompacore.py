@@ -226,7 +226,7 @@ class OMPAProblem(object):
                   total_oxygen_deficit=total_oxygen_deficit,
                   effective_conversion_ratios=effective_conversion_ratios)
 
-    def construct_ideal_endmembers_given_soln(self, ompa_soln):
+    def construct_ideal_endmembers(self, ompa_soln):
 
         b = self.get_b() # dims of num_obs X params
 
