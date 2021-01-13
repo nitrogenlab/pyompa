@@ -5,7 +5,7 @@ if __name__== '__main__':
           description='Python OMPA',
           long_description="""Python package for conducting OMPA (Optimum Multiparameter Water Mass Analysis)""",
           url='https://github.com/nitrogenlab/pyompa',
-          version='1.0.0.0',
+          version='1.1.0.0',
           packages=['pyompa'],
           setup_requires=[],
           install_requires=['numpy', 'pandas', 'cvxpy', 'scipy'],
