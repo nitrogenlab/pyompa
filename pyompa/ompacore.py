@@ -9,21 +9,20 @@ from collections import OrderedDict
 
 class OMPASoln(object):
 
-    def __init__(self, ompa_problem, **kwargs):
+    def __init__(self, endmember_df, ompa_problem, **kwargs):
+        self.endmember_df = endmember_df
         self.ompa_problem = ompa_problem
         self.obs_df = ompa_problem.obs_df
         self.conserved_params_to_use = ompa_problem.conserved_params_to_use
         self.converted_params_to_use = ompa_problem.converted_params_to_use   
         self.__dict__.update(kwargs)
 
-    def iteratively_refine_ompa_endmembers(self, num_iterations):
-        iter_to_ompa_solns, iter_to_endmemdf =\
-            self.ompa_problem.iteratively_refine_ompa_endmembers(
-                init_endmember_df=self.endmember_df,
-                num_iterations=num_iterations)
-        iter_to_ompa_solns = [self]+iter_to_ompa_solns
-        iter_to_endmemdf = [self.endmember_df]+iter_to_endmemdf
-        return iter_to_ompa_solns, iter_to_endmemdf 
+    def iteratively_refine_ompa_soln(self, num_iterations):
+        ompa_solns = self.ompa_problem.iteratively_refine_ompa_solns(
+            init_endmember_df=
+                self.ompa_problem.construct_ideal_endmembers(ompa_soln=self),
+            num_iterations=num_iterations)
+        return [self]+ompa_solns
 
 
 class OMPAProblem(object):
@@ -363,18 +362,17 @@ class OMPAProblem(object):
                 oxygen_deficits,
                 residuals_squared, prob)
 
-    def iteratively_refine_ompa_endmembers(self, init_endmember_df,
-                                           num_iterations):
-        iter_to_ompa_solns = []
-        iter_to_endmemdf = []
-        for i in range(num_iterations):
-            print("On iteration",i+1)
-            ompa_solns.append(self.solve(
-                endmember_df=iter_to_endmemdf[-1]))
-            iter_to_endmemdf.append(
-                self.construct_ideal_endmembers(
-                    ompa_soln=iter_to_ompa_solns[-1])) 
-        return iter_to_ompa_solns, iter_to_endmemdf 
+    def iteratively_refine_ompa_solns(self, init_endmember_df, num_iterations):
+        assert num_iterations >= 1,\
+            "num_iterations must be >= 1; is "+str(num_iterations)
+        print("On iteration 1")
+        ompa_solns = [self.solve(endmember_df=init_endmember_df)]
+        for i in range(num_iterations-1):
+            print("On iteration "+str(i+1))
+            new_endmember_df =\
+                self.construct_ideal_endmembers(soln=ompa_solns[-1]) 
+            ompa_solns.append(self.solve(endmember_df=new_endmember_df))
+        return ompa_solns 
 
 
 def spherical_to_surface_cartesian(lat, lon):
