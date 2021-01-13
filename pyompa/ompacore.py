@@ -11,6 +11,7 @@ class OMPASoln(object):
 
     def __init__(self, ompa_problem, **kwargs):
         self.ompa_problem = ompa_problem
+        self.obs_df = ompa_problem.obs_df
         self.conserved_params_to_use = ompa_problem.conserved_params_to_use,
         self.converted_params_to_use = ompa_problem.converted_params_to_use,   
         self.__dict__.update(kwargs)
