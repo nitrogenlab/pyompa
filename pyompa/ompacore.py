@@ -285,7 +285,8 @@ class OMPAProblem(object):
 
             #make a watermass data frame
             new_endmemmat_df = pd.DataFrame(OrderedDict(
-             [('watermassname', list(endmember_df["watermassname"]))]
+             [('watermassname',
+               list(ompa_soln.endmember_df["watermassname"]))]
              +[(paramname, values) for paramname,values in
              zip(self.conserved_params_to_use+self.converted_params_to_use,
                  new_endmemmat.T) ])) 
