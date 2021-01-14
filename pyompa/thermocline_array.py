@@ -44,9 +44,9 @@ def get_endmember_df_for_range(endmemnames_to_use,
 
 class ThermoclineArraySoln(object):
 
-    def __init__(self, endmemnames_to_df, endmemnames_to_use,
+    def __init__(self, endmemname_to_df, endmemnames_to_use,
                        thermocline_ompa_problem, thermocline_ompa_results):
-        self.endmemnames_to_df = endmemnames_to_df
+        self.endmemname_to_df = endmemname_to_df
         self.endmemnames_to_use = endmemnames_to_use
         self.thermocline_ompa_problem = thermocline_ompa_problem
         self.thermocline_ompa_results = thermocline_ompa_results
@@ -81,7 +81,7 @@ class ThermoclineArrayOMPAProblem(object):
         self.watermassname_to_usagepenaltyfunc =\
             watermassname_to_usagepenaltyfunc
 
-    def solve(self, endmemnames_to_df, endmemnames_to_use=None): 
+    def solve(self, endmemname_to_df, endmemnames_to_use=None): 
         if (endmemnames_to_use is None):
             endmemnames_to_use = sorted(endmemname_to_df.keys())
         thermocline_ompa_results = []
@@ -134,7 +134,7 @@ class ThermoclineArrayOMPAProblem(object):
         self.thermocline_ompa_results = thermocline_ompa_results
 
         return ThermoclineArraySoln(
-                 endmemnames_to_df=endmemname_to_df,
+                 endmemname_to_df=endmemname_to_df,
                  endmemnames_to_use=endmemnames_to_use,
                  thermocline_ompa_problem=self,
                  thermocline_ompa_results=thermocline_ompa_results)
