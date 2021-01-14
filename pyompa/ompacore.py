@@ -121,7 +121,7 @@ class OMPAProblem(object):
         endmember_usagepenalty = np.zeros((len(self.obs_df),
                                            len(endmember_names)))
         for endmemberidx,endmembername in enumerate(endmember_names):
-            if endmembername in self.endmembername_to_usagepenalty
+            if endmembername in self.endmembername_to_usagepenalty:
                 endmember_usagepenalty[:,endmemberidx] =\
                     self.endmembername_to_usagepenalty[endmembername]
         return endmember_usagepenalty
