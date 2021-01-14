@@ -12,13 +12,13 @@ def get_exponential_from_bounds_func(alpha, beta,
 
 
 #same as get_exponential_from_bounds_func but with defaults for alpha and beta
-def get_default_density_exp_penalty_func(alpha=0.5, beta=100, **kwargs):
+def get_default_density_exp_penalty_func(alpha=0.5, beta=1000, **kwargs):
     return get_exponential_from_bounds_func(
             alpha=alpha, beta=beta, **kwargs) 
 
 
 #same as get_exponential_from_bounds_func but with defaults for alpha and beta
-def get_default_latlon_exp_penalty_func(alpha=0.05, beta=10, **kwargs):
+def get_default_latlon_exp_penalty_func(alpha=0.05, beta=100, **kwargs):
     return get_exponential_from_bounds_func(
             alpha=alpha, beta=beta, **kwargs) 
 

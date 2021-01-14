@@ -56,6 +56,7 @@ class OMPASoln(object):
             ompa_soln=self)
         ompa_solns = self.ompa_problem.iteratively_refine_ompa_solns(
             init_endmember_df=init_endmember_df,
+            endmember_name_column=self.endmember_name_column,
             num_iterations=num_iterations)
         return [self]+ompa_solns
 
@@ -416,11 +417,13 @@ class OMPAProblem(object):
         return (x.value, endmember_fractions, oxygen_deficits,
                 perobs_weighted_resid_sq, prob)
 
-    def iteratively_refine_ompa_solns(self, init_endmember_df, num_iterations):
+    def iteratively_refine_ompa_solns(self, init_endmember_df,
+            endmember_name_column, num_iterations):
         assert num_iterations >= 1,\
             "num_iterations must be >= 1; is "+str(num_iterations)
         print("On iteration 1")
-        ompa_solns = [self.solve(endmember_df=init_endmember_df)]
+        ompa_solns = [self.solve(endmember_df=init_endmember_df,
+                                 endmember_name_column=endmember_name_column)]
         for i in range(1,num_iterations):
             print("On iteration "+str(i+1))
             new_endmember_df =\
