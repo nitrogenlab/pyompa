@@ -93,8 +93,8 @@ class ThermoclineArrayOMPAProblem(object):
             endmember_df_for_sig0_range =\
               get_endmember_df_for_range(
                   stratification_col=self.stratification_col,
-                  endmemnames_to_use=self.endmemnames_to_use,
-                  endmemname_to_df=self.endmemname_to_df,
+                  endmemnames_to_use=endmemnames_to_use,
+                  endmemname_to_df=endmemname_to_df,
                   bin_start=bin_start,
                   bin_end=bin_end)
 
