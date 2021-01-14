@@ -1,6 +1,6 @@
 from __future__ import division, print_function
 import numpy as np
-from .util import assert_in 
+from .util import assert_in, assert_compatible_keys 
 
 
 def get_exponential_from_bounds_func(alpha, beta,
@@ -37,7 +37,7 @@ def get_combined_penalty_func(colname_to_penaltyfunc):
     return penalty_func
 
 
-class GetEndMemExpPenaltyFunc(object):
+class EndMemExpPenaltyFunc(object):
     
     #mapping from spectype to factory functions that manufacture the
     # penalty functions
@@ -53,13 +53,13 @@ class GetEndMemExpPenaltyFunc(object):
 
     def validate_spec(self):
         for colname,spec_for_col in self.spec.items():
-            for spec_key in spec_for_col:
-                assert_in(
-                  value=spec_key,
-                  allowed=['type', 'lowerbound', 'upperbound', 'alpha', 'beta'],
-                  errorprefix="Problem with "+str(colname)+" penalty config; ") 
-            assert 'type' in spec_for_col,\
-                "specify a 'type' for "+str(colname)
+            assert_compatible_keys(
+              the_dict=spec_for_col,
+              allowed=['type', 'lowerbound', 'upperbound', 'alpha', 'beta'],
+              errorprefix="Problem with "+str(colname)+" penalty config: ") 
+            assert_has_keys(the_dict=spec_for_col, required_keys=["type"],
+                            errorprefix="Problem with "+str(colname)
+                                        +" penalty config: ")
             assert_in(
                 value=spec_for_col['type'],
                 allowed=list(self.SPECTYPE_TO_FACTORYFUNC.keys()),

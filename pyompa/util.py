@@ -1,9 +1,21 @@
 from __future__ import division, print_function
 
 
+def assert_compatible_keys(the_dict, allowed, errorprefix):
+    for key in the_dict:
+        assert_in(value=key, allowed=allowed, errorprefix=errorprefix)
+
+
 def assert_in(value, allowed, errorprefix):
     assert value in allowed,\
         errorprefix+str(value)+" not in allowed values: "+str(allowed)
+
+
+def assert_has_keys(the_dict, required_keys, errorprefix):
+    for key in required_keys:
+        assert key in the_dict, (
+            errorprefix+key+" must be specified. Provided keys are: "
+            +str(the_dict.keys()))
 
 
 #import gsw

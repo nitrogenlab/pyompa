@@ -79,7 +79,13 @@ class OMPAProblem(object):
         self.endmembername_to_usagepenaltyfunc =\
           endmembername_to_usagepenaltyfunc
         self.process_params()
-        self.prep_endmember_usagepenalties()
+        self.prep_endmember_usagepenalties() 
+
+    @classmethod
+    def from_toml_string(cls, toml_string):
+        parsed_toml = toml.loads(toml_string) 
+        observations_df_config = parsed_toml["observations_config"] 
+        
 
     def process_params(self):
         #check that every param in self.paramsandweighting_converted is
