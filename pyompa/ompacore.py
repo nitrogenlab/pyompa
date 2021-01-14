@@ -10,14 +10,46 @@ from collections import OrderedDict
 class OMPASoln(object):
 
     def __init__(self, endmember_df, endmember_name_column,
-                       ompa_problem, **kwargs):
+                       ompa_problem,
+                       endmember_fractions,
+                       total_oxygen_deficit,
+                       effective_conversion_ratios,
+                       **kwargs):
         self.endmember_df = endmember_df
         self.endmember_name_column = endmember_name_column
         self.ompa_problem = ompa_problem
+        self.endmember_fractions = endmember_fractions
+        self.total_oxygen_deficit = total_oxygen_deficit
+        self.effective_conversion_ratios = effective_conversion_ratios
         self.obs_df = ompa_problem.obs_df
         self.conserved_params_to_use = ompa_problem.conserved_params_to_use
         self.converted_params_to_use = ompa_problem.converted_params_to_use   
         self.__dict__.update(kwargs)
+
+    def export_to_csv(self, csv_output_name,
+                            orig_cols_to_include=[], **kwargs):
+        toexport_df_dict = OrderedDict()
+
+        endmembernames=list(
+            ompa_soln.endmember_df[ompa_soln.endmember_name_column])
+        for endmember_idx in range(len(endmembernames)):
+            toexport_df_dict[endmembernames[endmember_idx]] =\
+                self.endmember_fractions[:,endmember_idx]
+
+        if (self.total_oxygen_deficit is not None):
+            toexport_df_dict["total oxygen deficit"] = self.total_oxygen_deficit
+
+            for converted_param_idx in range(len(self.converted_params_to_use)):
+                toexport_df_dict["oxygen to"+
+                         self.converted_params_to_use[converted_param_idx]
+                         +" ratio"] =\
+                    1.0/self.effective_conversion_ratios[:,converted_param_idx]
+
+        for orig_col in orig_cols_to_include:
+            toexport_df_dict[orig_col] = self.obs_df[orig_col]
+        
+        toexport_df = pd.DataFrame(toexport_df_dict)
+        toexport_df.to_csv(csv_output_name, index_label=False, **kwargs)
 
     def iteratively_refine_ompa_soln(self, num_iterations):
         init_endmember_df = self.ompa_problem.construct_ideal_endmembers(
@@ -46,6 +78,7 @@ class OMPAProblem(object):
         self.endmembername_to_usagepenaltyfunc =\
           endmembername_to_usagepenaltyfunc
         self.process_params()
+        self.prep_endmember_usagepenalties()
 
     def process_params(self):
         #check that every param in self.paramsandweighting_converted is
@@ -75,23 +108,22 @@ class OMPAProblem(object):
         self.num_conversion_ratios = len(
             list(self.conversionratios.values())[0])
 
+    def prep_endmember_usagepenalties(self):
+        self.endmembername_to_usagepenalty = {}
+        for endmembername, penalty_func in\
+         self.endmembername_to_usagepenaltyfunc.items():
+            print("Adding penalty for",endmembername)
+            penalty = penalty_func(self.obs_df)
+            self.endmembername_to_usagepenalty[endmembername] = penalty
+        return endmember_usagepenalty
+
     def prep_endmember_usagepenalty_mat(self, endmember_names):
-        obs_df = self.obs_df
-        endmember_usagepenalty = np.zeros((len(obs_df),
+        endmember_usagepenalty = np.zeros((len(self.obs_df),
                                            len(endmember_names)))
         for endmemberidx,endmembername in enumerate(endmember_names):
-            if endmembername in self.endmembername_to_usagepenaltyfunc:
-                lat = np.array(obs_df["latitude"])
-                sig0 = np.array(obs_df["sig0"])
-                penalty = self.endmembername_to_usagepenaltyfunc[endmembername](
-                    lat=lat, sig0=sig0)
-                endmember_usagepenalty[:,endmemberidx] = penalty
-                #Plotting
-                from matplotlib import pyplot as plt
-                print("Adding penalty for",endmembername)
-                plt.scatter(lat, -np.array(obs_df["depth"]), c=penalty)
-                plt.colorbar()
-                plt.show()
+            if endmembername in self.endmembername_to_usagepenalty
+                endmember_usagepenalty[:,endmemberidx] =\
+                    self.endmembername_to_usagepenalty[endmembername]
         return endmember_usagepenalty
 
     def get_b(self):

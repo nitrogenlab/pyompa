@@ -5,9 +5,42 @@ import pandas as pd
 import altair as alt
 
 
-def plot_endmember_fractions(latitudes, depths,
-    endmember_fractions, endmembernames, total_oxygen_deficit,
-    effective_conversion_ratios, converted_param_names):
+def plot_endmember_usagepenalties(endmembername_to_usagepenalty,
+                                  xaxis_vals, xaxis_label,
+                                  yaxis_vals, yaxis_label,
+                                  flip_y=True):
+    endmembernames = sorted(endmembername_to_usagepenalty)
+    num_figs = len(endmembernames)
+    fig, ax = plt.subplots(nrows=1, ncols=num_figs, figsize=(5*num_figs,4))
+    for i in range(endmembernames):
+        plt.sca(ax[i])
+        plt.scatter(xaxis_vals, yaxis_vals, c=penalty)
+        plt.xlabel(xaxis_label)
+        if (i==0):
+            plt.ylabel(yaxis_label)
+        if (flip_y):
+            plt.ylim(plt.ylim()[1], plt.ylim()[0])
+        plt.colorbar()
+        plt.title(endmembernames[i])
+    plt.show()
+
+
+def plot_endmember_usagepenalties(ompa_soln, endmembername_to_usagepenalty,
+                                  xaxis_colname, yaxis_colname, flip_y):
+    plot_endmember_usagepenalties(
+        endmembername_to_usagepenalty=
+            ompa_soln.ompa_problem.endmembername_to_usagepenalty,
+        xaxis_vals=ompa_soln.obs_df[xaxis_colname],
+        xaxis_label=xaxis_colname,
+        yaxis_vals=ompa_soln.obs_df[yaxis_colname],
+        yaxis_label=yaxis_colname,
+        flip_y=True)
+
+
+def plot_endmember_fractions(xaxis_vals, xaxis_label, yaxis_vals, yaxis_label,
+        endmember_fractions, endmembernames, total_oxygen_deficit,
+        effective_conversion_ratios, converted_param_names,
+        flip_y=True):
     num_endmembers = endmember_fractions.shape[1]
     num_figs = (num_endmembers +
                 (1+len(converted_param_names)
@@ -15,52 +48,87 @@ def plot_endmember_fractions(latitudes, depths,
     fig, ax = plt.subplots(nrows=1, ncols=num_figs, figsize=(5*num_figs,4))
     for i in range(num_endmembers):
         plt.sca(ax[i])
-        plt.scatter(latitudes, depths, c=endmember_fractions[:,i])
-        plt.xlabel("latitude")
+        plt.scatter(xaxis_vals, yaxis_vals, c=endmember_fractions[:,i])
+        plt.xlabel(xaxis_label)
         if (i==0):
-            plt.ylabel("depth")
-        plt.ylim(plt.ylim()[1], plt.ylim()[0])
+            plt.ylabel(yaxis_label)
+        if (flip_y):
+            plt.ylim(plt.ylim()[1], plt.ylim()[0])
         plt.colorbar()
         plt.clim(0.0, 1.0)
         plt.title(endmembernames[i])
     if (total_oxygen_deficit is not None):
         plt.sca(ax[num_endmembers])
-        plt.scatter(latitudes, depths, c=total_oxygen_deficit)
-        plt.ylim(plt.ylim()[1], plt.ylim()[0])
+        plt.scatter(xaxis_vals, yaxis_vals, c=total_oxygen_deficit)
+        if (flip_y):
+            plt.ylim(plt.ylim()[1], plt.ylim()[0])
         plt.colorbar()
-        plt.xlabel("latitude")
+        plt.xlabel(xaxis_label)
         plt.title("oxygen deficit")
     for i in range(len(converted_param_names)):
         plt.sca(ax[num_endmembers+1+i])
-        plt.scatter(latitudes, depths,
+        plt.scatter(xaxis_vals, yaxis_vals,
                     c=1.0/effective_conversion_ratios[:,i])
-        plt.ylim(plt.ylim()[1], plt.ylim()[0])
+        if (flip_y):
+            plt.ylim(plt.ylim()[1], plt.ylim()[0])
         plt.colorbar()
-        plt.xlabel("latitude")
+        plt.xlabel(xaxis_label)
         plt.title(converted_param_names[i]
                   +" \nconversion ratio (relative to oxygen)")
     plt.show()
 
 
-def plot_residuals(param_residuals, param_names, latitudes, depths):
+def plot_ompasoln_endmember_fractions(ompa_soln, xaxis_colname,
+                                      yaxis_colname, flip_y=True):
+    plot_water_mass_fractions(
+        xaxis_vals=ompa_soln.obs_df[xaxis_colname],
+        xaxis_label=xaxis_colname,
+        yaxis_vals=ompa_soln.obs_df[yaxis_colname],
+        yaxis_label=yaxis_colname,
+        endmember_fractions=ompa_soln.endmember_fractions,
+        endmembernames=list(
+            ompa_soln.endmember_df[ompa_soln.endmember_name_column]),
+        total_oxygen_deficit=ompa_soln.total_oxygen_deficit,
+        effective_conversion_ratios=ompa_soln.effective_conversion_ratios,
+        converted_param_names=ompa_soln.converted_params_to_use,
+        flip_y=flip_y)
+
+
+def plot_residuals(param_residuals, param_names, xaxis_vals, xaxis_label,
+                   yaxis_vals, yaxis_label, flip_y=True):
     num_params = param_residuals.shape[1]
     fig, ax = plt.subplots(nrows=1, ncols=num_params, figsize=(5*num_params,4))
     for i in range(param_residuals.shape[1]):
         plt.sca(ax[i])
-        plt.scatter(x=latitudes,
-                    y=depths,
+        plt.scatter(x=xaxis_vals,
+                    y=yaxis_vals,
                     c=np.abs(param_residuals[:,i]),
                     cmap="viridis")
         plt.colorbar()
-        plt.xlabel("latitude")
+        plt.xlabel(xaxis_label)
         if (i==0):
-            plt.ylabel("depth")
-        plt.ylim(plt.ylim()[1], plt.ylim()[0])
+            plt.ylabel(yaxis_label)
+        if (flip_y):
+            plt.ylim(plt.ylim()[1], plt.ylim()[0])
         plt.title(param_names[i])
     plt.show()
 
 
-def plot_thermocline_endmember_fractions(ompa_problems_arr):
+def plot_ompasoln_residuals(ompa_soln, xaxis_colname,
+                            yaxis_colname, flip_y=True):
+    plot_residuals(
+        param_residuals=ompa_soln.param_residuals,
+        param_names=(ompa_soln.conserved_params_to_use
+                      + ompa_soln.converted_params_to_use),
+        xaxis_vals=ompa_soln.obs_df[xaxis_colname],
+        xaxis_label=xaxis_colname,
+        yaxis_vals=ompa_soln.obs_df[yaxis_colname],
+        yaxis_label=yaxis_colname, flip_y=flip_y)
+
+
+def plot_thermocline_endmember_fractions(ompa_problems_arr,
+                                         xaxis_colname, yaxis_colname,
+                                         flip_y=True):
     #first, check to make sure all entries in ompa_problems_arr have the same
     # number of endmembers; the assert statement will throw an error if
     # that is not the case
@@ -70,10 +138,10 @@ def plot_thermocline_endmember_fractions(ompa_problems_arr):
     assert all([x.endmember_fractions.shape[1]==num_endmembers
                 for x in ompa_problems_arr])
 
-    latitudes = np.concatenate([
-            np.array(x.obs_df["latitude"]) for x in ompa_problems_arr])
-    depths = np.concatenate([
-        np.array(x.obs_df["depth"]) for x in ompa_problems_arr])
+    xaxis_vals = np.concatenate([
+            np.array(x.obs_df[xaxis_colname]) for x in ompa_problems_arr])
+    yaxis_vals = np.concatenate([
+        np.array(x.obs_df[yaxis_colname]) for x in ompa_problems_arr])
     endmember_fractions = np.concatenate([
             x.endmember_fractions for x in ompa_problems_arr], axis=0)
     endmembernames = list(ompa_problems_arr[0].endmember_df[
@@ -89,31 +157,38 @@ def plot_thermocline_endmember_fractions(ompa_problems_arr):
         effective_conversion_ratios = None
 
     plot_endmember_fractions(
-        latitudes=latitudes,
-        depths=depths,
+        xaxis_vals=xaxis_vals,
+        yaxis_vals=yaxis_vals,
+        xaxis_label=xaxis_colname,
+        yaxis_label=yaxis_colname,
         endmember_fractions=endmember_fractions,
         endmembernames=endmembernames,
         total_oxygen_deficit=total_oxygen_deficit,
         converted_param_names=converted_param_names,
-        effective_conversion_ratios=effective_conversion_ratios)
+        effective_conversion_ratios=effective_conversion_ratios,
+        flip_y=flip_y)
 
 
-def plot_thermocline_residuals(ompa_problems_arr):
+def plot_thermocline_residuals(ompa_problems_arr, xaxis_colname, yaxis_colname,
+                               flip_y=True):
 
     param_residuals = np.concatenate([
             x.param_residuals for x in ompa_problems_arr], axis=0)
     param_names = (ompa_problems_arr[0].conserved_params_to_use
                      +ompa_problems_arr[0].converted_params_to_use)
-    latitudes = np.concatenate([
-            np.array(x.obs_df["latitude"]) for x in ompa_problems_arr])
-    depths = np.concatenate([
-        np.array(x.obs_df["depth"]) for x in ompa_problems_arr])
+    xaxis_vals = np.concatenate([
+            np.array(x.obs_df[xaxis_colname]) for x in ompa_problems_arr])
+    yaxis_vals = np.concatenate([
+        np.array(x.obs_df[yaxis_colname]) for x in ompa_problems_arr])
 
     plot_residuals(
         param_residuals=param_residuals,
         param_names=param_names,
-        latitudes=latitudes,
-        depths=depths)
+        xaxis_vals=xaxis_vals,
+        yaxis_vals=yaxis_vals,
+        xaxis_label=xaxis_colname,
+        yaxis_label=yaxis_colname,
+        flip_y=flip_y)
 
 
 def nozero_xaxis(field_name):
@@ -127,8 +202,10 @@ def nozero_yaxis(field_name, domain=None):
     return alt.Y(field_name, scale=alt.Scale(zero=False, domain=domain))
 
 
-def latdepth_scatterplot(basechart, selection,
-                         property_name, altairdf, zerocenter=False):
+def transect_scatterplot(basechart, selection,
+                         property_name, altairdf, zerocenter=False,
+                         xaxis_colname, yaxis_colname,
+                         flip_y=True):
     additional_color_kwargs = {}
     if (zerocenter):
         max_abs_property = np.max(np.abs(altairdf[property_name]))
@@ -138,10 +215,11 @@ def latdepth_scatterplot(basechart, selection,
     color = alt.condition(selection, property_name, alt.value('lightgray'),
                           title="",
                           **additional_color_kwargs)
-    max_depth = np.max(altairdf["depth"])*1.05
+    max_depth = np.max(altairdf[yaxis_colname])*1.05
     to_return = basechart.encode(
-              nozero_xaxis("latitude"),
-              nozero_yaxis("depth", domain=(max_depth,0))
+              nozero_xaxis(xaxis_colname),
+              nozero_yaxis(yaxis_colname, domain=((max_depth,0) if flip_y
+                                                  else (0,max_depth)) )
            ).encode(color=color).properties(title=property_name)
     return to_return
            
@@ -168,7 +246,9 @@ def pp_scatterplot(obs_basechart, selection,
                                          nozero_yaxis(property2)))
     
 
-def build_altair_viz(ompa_problem, chart_width=200, chart_height=200):
+def build_altair_viz(ompa_problem, xaxis_colname, yaxis_colname,
+                     flip_y=True, chart_width=200, chart_height=200,
+                     extra_tooltip_cols=[]):
     import altair as alt
 
     endmember_name_column = ompa_problem.endmember_name_column
@@ -197,7 +277,7 @@ def build_altair_viz(ompa_problem, chart_width=200, chart_height=200):
 
     interval_selection = alt.selection_interval()
     tooltip_columns = (param_names
-      + ["latitude", "longitude"]
+      + [xaxis_colname, yaxis_colname] + extra_tooltip_cols
       + endmember_names
       + [x+"_resid" for x in param_names]
       + (["total O2 deficit"]+
@@ -224,19 +304,23 @@ def build_altair_viz(ompa_problem, chart_width=200, chart_height=200):
 
     #display a row that is the endmember fractions
     endmember_fraction_scatterplots = [
-        latdepth_scatterplot(
+        transect_scatterplot(
             basechart=obs_basechart,
             selection=interval_selection,
             property_name=property_name,
-            altairdf=altairdf)
+            altairdf=altairdf,
+            xaxis_colname=xaxis_colname, yaxis_colname=yaxis_colname,
+            flip_y=flip_y)
         for property_name in endmember_names[:-1]]
 
     if (ompa_problem.total_oxygen_deficit is not None):
-        oxygen_deficit_scatterplot = latdepth_scatterplot(
+        oxygen_deficit_scatterplot = transect_scatterplot(
                 basechart=obs_basechart,
                 selection=interval_selection,
                 property_name="total O2 deficit",
-                altairdf=altairdf)
+                altairdf=altairdf,
+                xaxis_colname=xaxis_colname, yaxis_colname=yaxis_colname,
+                flip_y=flip_y)
 
     the_pp_scatterplots = []
     for i in range(len(param_names)):
@@ -252,30 +336,36 @@ def build_altair_viz(ompa_problem, chart_width=200, chart_height=200):
             )
     
     resid_scatterplots = [
-        latdepth_scatterplot(
+        transect_scatterplot(
             basechart=obs_basechart,
             selection=interval_selection,
             property_name=property_name+"_resid",
             altairdf=altairdf,
-            zerocenter=True)
+            zerocenter=True,
+            xaxis_colname=xaxis_colname, yaxis_colname=yaxis_colname,
+            flip_y=flip_y)
         for property_name in param_names]
 
     prop_scatterplots = [
-        latdepth_scatterplot(
+        transect_scatterplot(
             basechart=obs_basechart,
             selection=interval_selection,
             property_name=property_name,
             altairdf=altairdf,
-            zerocenter=False)
+            zerocenter=False,
+            xaxis_colname=xaxis_colname, yaxis_colname=yaxis_colname,
+            flip_y=flip_y)
         for property_name in param_names]
 
     conversion_ratio_scatterplots = [
-      latdepth_scatterplot(
+      transect_scatterplot(
           basechart=obs_basechart,
             selection=interval_selection,
             property_name=paramname+" eff conv ratio",
             altairdf=altairdf,
-            zerocenter=False)
+            zerocenter=False,
+            xaxis_colname=xaxis_colname, yaxis_colname=yaxis_colname,
+            flip_y=flip_y)
       for paramname in ompa_problem.converted_params_to_use
     ]
     #assert False
@@ -297,7 +387,9 @@ def build_altair_viz(ompa_problem, chart_width=200, chart_height=200):
 
 
 def build_thermocline_altair_viz(ompa_problems_arr,
-                                 chart_width=200, chart_height=200):
+                                 xaxis_colname, yaxis_colname,
+                                 chart_width=200, chart_height=200,
+                                 flip_y=True, extra_tooltip_cols=[]):
 
     #verify endmember names are the same for all
     endmember_name_column = ompa_problems_arr[0].endmember_name_column
@@ -343,7 +435,7 @@ def build_thermocline_altair_viz(ompa_problems_arr,
                      +ompa_problems_arr[0].converted_params_to_use)
     interval_selection = alt.selection_interval()
     tooltip_columns = (list(param_names)
-      + ["latitude", "longitude"]
+      + [xaxis_colname, yaxis_colname] + extra_tooltip_cols
       + list(endmember_names)
       + [x+"_resid" for x in param_names]
       + (["total O2 deficit"]+
@@ -375,15 +467,17 @@ def build_thermocline_altair_viz(ompa_problems_arr,
 
     #display a row that is the endmember fractions
     endmember_fraction_scatterplots = [
-        latdepth_scatterplot(
+        transect_scatterplot(
             basechart=obs_basechart,
             selection=interval_selection,
             property_name=property_name,
-            altairdf=altairdf)
+            altairdf=altairdf,
+            xaxis_colname=xaxis_colname, yaxis_colname=yaxis_colname,
+            flip_y=flip_y)
         for property_name in endmember_names]
 
     if (ompa_problems_arr[0].total_oxygen_deficit is not None):
-        oxygen_deficit_scatterplot = latdepth_scatterplot(
+        oxygen_deficit_scatterplot = transect_scatterplot(
                 basechart=obs_basechart,
                 selection=interval_selection,
                 property_name="total O2 deficit",
@@ -403,30 +497,36 @@ def build_thermocline_altair_viz(ompa_problems_arr,
             )
     
     resid_scatterplots = [
-        latdepth_scatterplot(
+        transect_scatterplot(
             basechart=obs_basechart,
             selection=interval_selection,
             property_name=property_name+"_resid",
             altairdf=altairdf,
-            zerocenter=True)
+            zerocenter=True,
+            xaxis_colname=xaxis_colname, yaxis_colname=yaxis_colname,
+            flip_y=flip_y)
         for property_name in param_names]
 
     prop_scatterplots = [
-        latdepth_scatterplot(
+        transect_scatterplot(
             basechart=obs_basechart,
             selection=interval_selection,
             property_name=property_name,
             altairdf=altairdf,
-            zerocenter=True)
+            zerocenter=True,
+            xaxis_colname=xaxis_colname, yaxis_colname=yaxis_colname,
+            flip_y=flip_y)
         for property_name in param_names]
 
     conversion_ratio_scatterplots = [
-      latdepth_scatterplot(
+      transect_scatterplot(
           basechart=obs_basechart,
             selection=interval_selection,
             property_name=paramname+" eff conv ratio",
             altairdf=altairdf,
-            zerocenter=False)
+            zerocenter=False,
+            xaxis_colname=xaxis_colname, yaxis_colname=yaxis_colname,
+            flip_y=flip_y)
       for paramname in ompa_problems_arr[0].converted_params_to_use
     ]
 
