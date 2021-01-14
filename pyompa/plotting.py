@@ -481,7 +481,9 @@ def build_thermocline_altair_viz(ompa_problems_arr,
                 basechart=obs_basechart,
                 selection=interval_selection,
                 property_name="total O2 deficit",
-                altairdf=altairdf)
+                altairdf=altairdf,
+                xaxis_colname=xaxis_colname, yaxis_colname=yaxis_colname,
+                flip_y=flip_y)
 
     the_pp_scatterplots = []
     for i in range(len(param_names)):
