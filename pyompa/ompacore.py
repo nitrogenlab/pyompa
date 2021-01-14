@@ -428,7 +428,8 @@ class OMPAProblem(object):
             print("On iteration "+str(i+1))
             new_endmember_df =\
                 self.construct_ideal_endmembers(ompa_soln=ompa_solns[-1]) 
-            ompa_solns.append(self.solve(endmember_df=new_endmember_df))
+            ompa_solns.append(self.solve(endmember_df=new_endmember_df,
+                                  endmember_name_column=endmember_name_column))
         return ompa_solns 
 
 
