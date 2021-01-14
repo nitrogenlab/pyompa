@@ -12,7 +12,7 @@ def plot_endmember_usagepenalties(endmembername_to_usagepenalty,
     endmembernames = sorted(endmembername_to_usagepenalty)
     num_figs = len(endmembernames)
     fig, ax = plt.subplots(nrows=1, ncols=num_figs, figsize=(5*num_figs,4))
-    for i in range(endmembernames):
+    for i in range(len(endmembernames)):
         plt.sca(ax[i])
         plt.scatter(xaxis_vals, yaxis_vals, c=penalty)
         plt.xlabel(xaxis_label)
