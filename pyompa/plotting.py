@@ -81,7 +81,7 @@ def plot_endmember_fractions(xaxis_vals, xaxis_label, yaxis_vals, yaxis_label,
 
 def plot_ompasoln_endmember_fractions(ompa_soln, xaxis_colname,
                                       yaxis_colname, flip_y=True):
-    plot_water_mass_fractions(
+    plot_endmember_fractions(
         xaxis_vals=ompa_soln.obs_df[xaxis_colname],
         xaxis_label=xaxis_colname,
         yaxis_vals=ompa_soln.obs_df[yaxis_colname],
