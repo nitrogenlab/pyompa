@@ -155,7 +155,7 @@ class OMPAProblem(object):
             pairs_matrix = None
 
         #first run with only a positive conversion ratio allowed
-        _, _, _, individual_residuals_positiveconversionsign, _ =\
+        _, _, _, perobs_weighted_resid_sq_positiveconversionsign, _ =\
           self.core_solve(
             A=A, b=b,
             num_conversion_ratios=self.num_conversion_ratios,
@@ -164,7 +164,7 @@ class OMPAProblem(object):
             watermass_usagepenalty=watermass_usagepenalty,
             conversion_sign_constraints=1,
             smoothness_lambda=None)
-        _, _, _, individual_residuals_negativeconversionsign, _ =\
+        _, _, _, perobs_weighted_resid_sq_negativeconversionsign, _ =\
           self.core_solve(
             A=A, b=b,
             num_conversion_ratios=self.num_conversion_ratios,
@@ -176,15 +176,14 @@ class OMPAProblem(object):
         
         #determine which conversion sign is better
         positive_conversionsign_isbetter = (
-            individual_residuals_positiveconversionsign
-            < individual_residuals_negativeconversionsign)
+            perobs_weighted_resid_sq < perobs_weighted_resid_sq)
         final_conversion_signconstraints = (
             1.0*positive_conversionsign_isbetter
             + -1.0*(positive_conversionsign_isbetter==False))
         
         (x, water_mass_fractions,
          oxygen_deficits,
-         resid_wsumsq, prob) = self.core_solve(
+         perobs_weighted_resid_sq, prob) = self.core_solve(
             A=A, b=b,
             num_conversion_ratios=self.num_conversion_ratios,
             num_converted_params=len(self.converted_params_to_use),
@@ -194,7 +193,7 @@ class OMPAProblem(object):
             smoothness_lambda=smoothness_lambda)
         
         if (water_mass_fractions is not None):
-            print("objective:", resid_wsumsq)
+            print("objective:", np.sum(perobs_weighted_resid_sq))
             param_reconstruction = (x@A)/weighting[None,:]
             param_residuals = b/weighting[None,:] - param_reconstruction
         else:
@@ -206,8 +205,8 @@ class OMPAProblem(object):
             # precision
             for oxygen_deficit in oxygen_deficits:
                 if (len(oxygen_deficit) > 0):
-                    if ((all(oxygen_deficit > -1e-3) or
-                         all(oxygen_deficit < 1e-3))==False):
+                    if ((all(oxygen_deficit > -1e-5) or
+                         all(oxygen_deficit < 1e-5))==False):
                         print("WARNING: potential sign inconsistency in"
                               +" oxygen deficits:", oxygen_deficit)
             total_oxygen_deficit = np.sum(oxygen_deficits, axis=-1)
@@ -230,7 +229,7 @@ class OMPAProblem(object):
                   status=prob.status,
                   water_mass_fractions=water_mass_fractions,
                   oxygen_deficits=oxygen_deficits,
-                  resid_wsumsq=resid_wsumsq,
+                  resid_wsumsq=np.sum(resid_wsumsq),
                   param_residuals=param_residuals,
                   total_oxygen_deficit=total_oxygen_deficit,
                   effective_conversion_ratios=effective_conversion_ratios)
@@ -359,22 +358,28 @@ class OMPAProblem(object):
         if (prob.status=="infeasible"):
             raise RuntimeError("Optimization failed - "
                                +"try lowering the parameter weights?")
-            water_mass_fractions = None
-            oxygen_deficits = None
-            resid_wsumsq = None
         else:
+            #weighted sum of squared of the residuals
+            original_resid_wsumsq = np.sum(np.square((x.value@A) - b))
+
             water_mass_fractions = x.value[:,:num_watermasses]
+            ##enforce the constraints (nonnegativity, sum to 1) on
+            ## water_mass_fractions
+            #water_mass_fractions = np.maximum(water_mass_fractions, 0) 
+            #water_mass_fractions = (water_mass_fractions/
+            #    np.sum(water_mass_fractions,axis=-1)[:,None])
             if (num_converted_params > 0):
-               oxygen_deficits = x.value[:,num_watermasses:]
+                oxygen_deficits = x.value[:,num_watermasses:]
             else:
                oxygen_deficits = None
-            #weighted sum of squared of the residuals
-            resid_wsumsq = np.sum(np.square((x.value@A) - b)) 
+
+            perobs_weighted_resid_sq =\
+                np.sum(np.square((x.value@A) - b), axis=-1)
+            #TODO: enforce that the constraints are satisfied, and
+            #recompute residuals accordingly.
         
-        return (x.value,
-                water_mass_fractions,
-                oxygen_deficits,
-                resid_wsumsq, prob)
+        return (x.value, water_mass_fractions, oxygen_deficits,
+                perobs_weighted_resid_sq, prob)
 
     def iteratively_refine_ompa_solns(self, init_endmember_df, num_iterations):
         assert num_iterations >= 1,\
