@@ -75,7 +75,7 @@ def plot_thermocline_water_mass_fractions(ompa_problems_arr):
         np.array(x.obs_df["depth"]) for x in ompa_problems_arr])
     water_mass_fractions = np.concatenate([
             x.water_mass_fractions for x in ompa_problems_arr], axis=0)
-    watermassnames = list(ompa_problems_arr[0].watermass_df["watermassname"])
+    watermassnames = list(ompa_problems_arr[0].endmember_df["watermassname"])
     converted_param_names = ompa_problems_arr[0].converted_params_to_use
     if (ompa_problems_arr[0].total_oxygen_deficit is not None):
         total_oxygen_deficit = np.concatenate([x.total_oxygen_deficit
@@ -173,7 +173,7 @@ def build_altair_viz(ompa_problem, chart_width=200, chart_height=200):
     watermass_names = []
     for water_mass_idx in range(ompa_problem.water_mass_fractions.shape[1]):
         watermass_name =\
-          ompa_problem.watermass_df["watermassname"][water_mass_idx]
+          ompa_problem.endmember_df["watermassname"][water_mass_idx]
         watermass_names.append(watermass_name)
         altairdf[watermass_name] =\
             ompa_problem.water_mass_fractions[:,water_mass_idx]
@@ -213,7 +213,7 @@ def build_altair_viz(ompa_problem, chart_width=200, chart_height=200):
           height=chart_height)
     
     watermass_basechart =\
-      alt.Chart(ompa_problem.watermass_df).mark_point(
+      alt.Chart(ompa_problem.endmember_df).mark_point(
           shape="diamond", size=50).encode(
               color="watermassname").properties(
                 width=chart_width,
@@ -297,8 +297,8 @@ def build_thermocline_altair_viz(ompa_problems_arr,
                                  chart_width=200, chart_height=200):
 
     #verify watermass names are the same for all
-    watermass_names = tuple(ompa_problems_arr[0].watermass_df["watermassname"])
-    assert all(tuple(x.watermass_df["watermassname"])==watermass_names
+    watermass_names = tuple(ompa_problems_arr[0].endmember_df["watermassname"])
+    assert all(tuple(x.endmember_df["watermassname"])==watermass_names
                for x in ompa_problems_arr)
     #similar verification for param_names
     param_names = tuple(ompa_problems_arr[0].conserved_params_to_use
@@ -358,10 +358,10 @@ def build_thermocline_altair_viz(ompa_problems_arr,
           height=chart_height)
     
     #prepare a watermass df
-    watermass_df = pd.concat([x.watermass_df for x in ompa_problems_arr])
+    endmember_df = pd.concat([x.endmember_df for x in ompa_problems_arr])
 
     watermass_basechart =\
-      alt.Chart(watermass_df).mark_point(
+      alt.Chart(endmember_df).mark_point(
           shape="diamond", size=50).encode(
               tooltip=list(param_names),
               color="watermassname").properties(
