@@ -6,6 +6,7 @@ import pandas as pd
 
 def get_endmember_df_for_range(endmemnames_to_use,
                                endmemname_to_df,
+                               endmember_name_column,
                                stratification_col,
                                bin_start, bin_end):
     #Idea: for each entry in endmemname_to_df, filter out the row
@@ -21,9 +22,10 @@ def get_endmember_df_for_range(endmemnames_to_use,
         #apply a filtering to endmemname_to_df to get the right
         # row corresponding to the range
         df = endmemname_to_df[endmemname]
-        correct_rows_for_endmemname = (
+        correct_rows_for_endmemname = pd.DataFrame(
             df[(df[stratification_col] >= bin_start) &
                (df[stratification_col] < bin_end)])
+        correct_rows_for_endmemname[endmember_name_column] = endmember_name
         #correct_rows_for_endmemname should have a length of 1 (there should
         # be only one row for each bin), so let's verify that with
         # an 'assert' statement.
@@ -69,7 +71,7 @@ class ThermoclineArrayOMPAProblem(object):
                        paramsandweighting_conserved,
                        paramsandweighting_converted,
                        conversionratios,
-                       watermassname_to_usagepenaltyfunc={}):
+                       endmembername_to_usagepenaltyfunc={}):
         self.stratification_col = stratification_col
         self.tc_lower_bound = tc_lower_bound
         self.tc_upper_bound = tc_upper_bound
@@ -78,10 +80,11 @@ class ThermoclineArrayOMPAProblem(object):
         self.paramsandweighting_conserved = paramsandweighting_conserved
         self.paramsandweighting_converted = paramsandweighting_converted
         self.conversionratios = conversionratios
-        self.watermassname_to_usagepenaltyfunc =\
-            watermassname_to_usagepenaltyfunc
+        self.endmembername_to_usagepenaltyfunc =\
+            endmembername_to_usagepenaltyfunc
 
-    def solve(self, endmemname_to_df, endmemnames_to_use=None): 
+    def solve(self, endmemname_to_df, endmember_name_column="endmember_name",
+                    endmemnames_to_use=None): 
         if (endmemnames_to_use is None):
             endmemnames_to_use = sorted(endmemname_to_df.keys())
         thermocline_ompa_results = []
@@ -95,6 +98,7 @@ class ThermoclineArrayOMPAProblem(object):
                   stratification_col=self.stratification_col,
                   endmemnames_to_use=endmemnames_to_use,
                   endmemname_to_df=endmemname_to_df,
+                  endmember_name_column=endmember_name_column,
                   bin_start=bin_start,
                   bin_end=bin_end)
 
@@ -114,9 +118,10 @@ class ThermoclineArrayOMPAProblem(object):
                 paramsandweighting_converted=self.paramsandweighting_converted,
                 conversionratios=self.conversionratios,
                 smoothness_lambda=None,
-                watermassname_to_usagepenaltyfunc=
-                  self.watermassname_to_usagepenaltyfunc).solve(
-                    endmember_df=endmember_df_for_sig0_range)
+                endmembername_to_usagepenaltyfunc=
+                  self.endmembername_to_usagepenaltyfunc).solve(
+                    endmember_df=endmember_df_for_sig0_range,
+                    endmember_name_column=endmember_name_column)
             if (ompa_soln.status is not "infeasible"):
                 thermocline_ompa_results.append(ompa_soln)
             else:
@@ -127,7 +132,7 @@ class ThermoclineArrayOMPAProblem(object):
                  +[x[0] for x in thermocline_paramsandweighting[1]]
                  +["sig0"])
                 print(obs_df_for_sig0_range[cols_to_print])
-                print("water mass df:")
+                print("endmember df:")
                 print(endmember_df_for_sig0_range[cols_to_print])
                 print("Try lowering the parameter weights!")
 
@@ -135,6 +140,7 @@ class ThermoclineArrayOMPAProblem(object):
 
         return ThermoclineArraySoln(
                  endmemname_to_df=endmemname_to_df,
+                 endmember_name_column=endmember_name_column,
                  endmemnames_to_use=endmemnames_to_use,
                  thermocline_ompa_problem=self,
                  thermocline_ompa_results=thermocline_ompa_results)

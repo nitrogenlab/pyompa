@@ -5,33 +5,33 @@ import pandas as pd
 import altair as alt
 
 
-def plot_water_mass_fractions(latitudes, depths,
-    water_mass_fractions, watermassnames, total_oxygen_deficit,
+def plot_endmember_fractions(latitudes, depths,
+    endmember_fractions, endmembernames, total_oxygen_deficit,
     effective_conversion_ratios, converted_param_names):
-    num_watermasses = water_mass_fractions.shape[1]
-    num_figs = (num_watermasses +
+    num_endmembers = endmember_fractions.shape[1]
+    num_figs = (num_endmembers +
                 (1+len(converted_param_names)
                  if total_oxygen_deficit is not None else 0))
     fig, ax = plt.subplots(nrows=1, ncols=num_figs, figsize=(5*num_figs,4))
-    for i in range(num_watermasses):
+    for i in range(num_endmembers):
         plt.sca(ax[i])
-        plt.scatter(latitudes, depths, c=water_mass_fractions[:,i])
+        plt.scatter(latitudes, depths, c=endmember_fractions[:,i])
         plt.xlabel("latitude")
         if (i==0):
             plt.ylabel("depth")
         plt.ylim(plt.ylim()[1], plt.ylim()[0])
         plt.colorbar()
         plt.clim(0.0, 1.0)
-        plt.title(watermassnames[i])
+        plt.title(endmembernames[i])
     if (total_oxygen_deficit is not None):
-        plt.sca(ax[num_watermasses])
+        plt.sca(ax[num_endmembers])
         plt.scatter(latitudes, depths, c=total_oxygen_deficit)
         plt.ylim(plt.ylim()[1], plt.ylim()[0])
         plt.colorbar()
         plt.xlabel("latitude")
         plt.title("oxygen deficit")
     for i in range(len(converted_param_names)):
-        plt.sca(ax[num_watermasses+1+i])
+        plt.sca(ax[num_endmembers+1+i])
         plt.scatter(latitudes, depths,
                     c=1.0/effective_conversion_ratios[:,i])
         plt.ylim(plt.ylim()[1], plt.ylim()[0])
@@ -60,22 +60,24 @@ def plot_residuals(param_residuals, param_names, latitudes, depths):
     plt.show()
 
 
-def plot_thermocline_water_mass_fractions(ompa_problems_arr):
+def plot_thermocline_endmember_fractions(ompa_problems_arr):
     #first, check to make sure all entries in ompa_problems_arr have the same
-    # number of water masses; the assert statement will throw an error if
+    # number of endmembers; the assert statement will throw an error if
     # that is not the case
 
-    num_watermasses = ompa_problems_arr[0].water_mass_fractions.shape[1]
-    assert all([x.water_mass_fractions.shape[1]==num_watermasses
+    endmember_name_column = ompa_problems_arr[0].endmember_name_column
+    num_endmembers = ompa_problems_arr[0].endmember_fractions.shape[1]
+    assert all([x.endmember_fractions.shape[1]==num_endmembers
                 for x in ompa_problems_arr])
 
     latitudes = np.concatenate([
             np.array(x.obs_df["latitude"]) for x in ompa_problems_arr])
     depths = np.concatenate([
         np.array(x.obs_df["depth"]) for x in ompa_problems_arr])
-    water_mass_fractions = np.concatenate([
-            x.water_mass_fractions for x in ompa_problems_arr], axis=0)
-    watermassnames = list(ompa_problems_arr[0].endmember_df["watermassname"])
+    endmember_fractions = np.concatenate([
+            x.endmember_fractions for x in ompa_problems_arr], axis=0)
+    endmembernames = list(ompa_problems_arr[0].endmember_df[
+                            endmember_name_column])
     converted_param_names = ompa_problems_arr[0].converted_params_to_use
     if (ompa_problems_arr[0].total_oxygen_deficit is not None):
         total_oxygen_deficit = np.concatenate([x.total_oxygen_deficit
@@ -86,11 +88,11 @@ def plot_thermocline_water_mass_fractions(ompa_problems_arr):
         total_oxygen_deficit = None
         effective_conversion_ratios = None
 
-    plot_water_mass_fractions(
+    plot_endmember_fractions(
         latitudes=latitudes,
         depths=depths,
-        water_mass_fractions=water_mass_fractions,
-        watermassnames=watermassnames,
+        endmember_fractions=endmember_fractions,
+        endmembernames=endmembernames,
         total_oxygen_deficit=total_oxygen_deficit,
         converted_param_names=converted_param_names,
         effective_conversion_ratios=effective_conversion_ratios)
@@ -154,7 +156,7 @@ def wrap_scatterplots(scatterplots, resolve_scale='shared', rowsize=7):
 
 
 def pp_scatterplot(obs_basechart, selection,
-                   watermass_basechart,
+                   endmember_basechart,
                    property1, property2, opacity):
     color = alt.condition(selection, alt.value('lightblue'),
                           alt.value('lightgray'))
@@ -162,21 +164,22 @@ def pp_scatterplot(obs_basechart, selection,
                 nozero_xaxis(property1),
                 nozero_yaxis(property2),
                 color=color)
-            + watermass_basechart.encode(nozero_xaxis(property1),
+            + endmember_basechart.encode(nozero_xaxis(property1),
                                          nozero_yaxis(property2)))
     
 
 def build_altair_viz(ompa_problem, chart_width=200, chart_height=200):
     import altair as alt
 
+    endmember_name_column = ompa_problem.endmember_name_column
     altairdf = pd.DataFrame(ompa_problem.obs_df)
-    watermass_names = []
-    for water_mass_idx in range(ompa_problem.water_mass_fractions.shape[1]):
-        watermass_name =\
-          ompa_problem.endmember_df["watermassname"][water_mass_idx]
-        watermass_names.append(watermass_name)
-        altairdf[watermass_name] =\
-            ompa_problem.water_mass_fractions[:,water_mass_idx]
+    endmember_names = []
+    for endmember_idx in range(ompa_problem.endmember_fractions.shape[1]):
+        endmember_name =\
+          ompa_problem.endmember_df[endmember_name_column][endmember_idx]
+        endmember_names.append(endmember_name)
+        altairdf[endmember_name] =\
+            ompa_problem.endmember_fractions[:,endmember_idx]
     
     if (ompa_problem.total_oxygen_deficit is not None):
         altairdf["total O2 deficit"] = ompa_problem.total_oxygen_deficit
@@ -195,7 +198,7 @@ def build_altair_viz(ompa_problem, chart_width=200, chart_height=200):
     interval_selection = alt.selection_interval()
     tooltip_columns = (param_names
       + ["latitude", "longitude"]
-      + watermass_names
+      + endmember_names
       + [x+"_resid" for x in param_names]
       + (["total O2 deficit"]+
          [x+" eff conv ratio" for x in
@@ -212,21 +215,21 @@ def build_altair_viz(ompa_problem, chart_width=200, chart_height=200):
           width=chart_width,
           height=chart_height)
     
-    watermass_basechart =\
+    endmember_basechart =\
       alt.Chart(ompa_problem.endmember_df).mark_point(
           shape="diamond", size=50).encode(
-              color="watermassname").properties(
+              color=endmember_name_column).properties(
                 width=chart_width,
                 height=chart_height)
 
-    #display a row that is the water mass fractions
-    watermass_fraction_scatterplots = [
+    #display a row that is the endmember fractions
+    endmember_fraction_scatterplots = [
         latdepth_scatterplot(
             basechart=obs_basechart,
             selection=interval_selection,
             property_name=property_name,
             altairdf=altairdf)
-        for property_name in watermass_names[:-1]]
+        for property_name in endmember_names[:-1]]
 
     if (ompa_problem.total_oxygen_deficit is not None):
         oxygen_deficit_scatterplot = latdepth_scatterplot(
@@ -242,7 +245,7 @@ def build_altair_viz(ompa_problem, chart_width=200, chart_height=200):
                 pp_scatterplot(
                     obs_basechart=obs_basechart,
                     selection=interval_selection,
-                    watermass_basechart=watermass_basechart,
+                    endmember_basechart=endmember_basechart,
                     property1=param_names[i],
                     property2=param_names[j],
                     opacity=0.2)
@@ -279,7 +282,7 @@ def build_altair_viz(ompa_problem, chart_width=200, chart_height=200):
 
     return alt.vconcat(*(
         
-              [wrap_scatterplots(watermass_fraction_scatterplots)]
+              [wrap_scatterplots(endmember_fraction_scatterplots)]
               +([oxygen_deficit_scatterplot,
                  wrap_scatterplots(conversion_ratio_scatterplots,
                                    resolve_scale="independent")]
@@ -296,9 +299,11 @@ def build_altair_viz(ompa_problem, chart_width=200, chart_height=200):
 def build_thermocline_altair_viz(ompa_problems_arr,
                                  chart_width=200, chart_height=200):
 
-    #verify watermass names are the same for all
-    watermass_names = tuple(ompa_problems_arr[0].endmember_df["watermassname"])
-    assert all(tuple(x.endmember_df["watermassname"])==watermass_names
+    #verify endmember names are the same for all
+    endmember_name_column = ompa_problems_arr[0].endmember_name_column
+    endmember_names = tuple(ompa_problems_arr[0].endmember_df[
+                             endmember_name_column])
+    assert all(tuple(x.endmember_df[endmember_name_column])==endmember_names
                for x in ompa_problems_arr)
     #similar verification for param_names
     param_names = tuple(ompa_problems_arr[0].conserved_params_to_use
@@ -310,11 +315,11 @@ def build_thermocline_altair_viz(ompa_problems_arr,
     #concatenate all the observations to get a new obs_df
     altairdf = pd.concat([x.obs_df for x in ompa_problems_arr])
 
-    for water_mass_idx in range(ompa_problems_arr[0]
-                                .water_mass_fractions.shape[1]):
-      watermass_name = watermass_names[water_mass_idx]
-      altairdf[watermass_name] = np.concatenate([
-        x.water_mass_fractions[:,water_mass_idx]
+    for endmember_idx in range(ompa_problems_arr[0]
+                                .endmember_fractions.shape[1]):
+      endmember_name = endmember_names[endmember_idx]
+      altairdf[endmember_name] = np.concatenate([
+        x.endmember_fractions[:,endmember_idx]
         for x in ompa_problems_arr])
       
     if (ompa_problems_arr[0].total_oxygen_deficit is not None):
@@ -339,7 +344,7 @@ def build_thermocline_altair_viz(ompa_problems_arr,
     interval_selection = alt.selection_interval()
     tooltip_columns = (list(param_names)
       + ["latitude", "longitude"]
-      + list(watermass_names)
+      + list(endmember_names)
       + [x+"_resid" for x in param_names]
       + (["total O2 deficit"]+
          [x+" eff conv ratio" for x in
@@ -357,25 +362,25 @@ def build_thermocline_altair_viz(ompa_problems_arr,
           width=chart_width,
           height=chart_height)
     
-    #prepare a watermass df
+    #prepare a endmember df
     endmember_df = pd.concat([x.endmember_df for x in ompa_problems_arr])
 
-    watermass_basechart =\
+    endmember_basechart =\
       alt.Chart(endmember_df).mark_point(
           shape="diamond", size=50).encode(
               tooltip=list(param_names),
-              color="watermassname").properties(
+              color=endmember_name_column).properties(
                 width=chart_width,
                 height=chart_height)
 
-    #display a row that is the water mass fractions
-    watermass_fraction_scatterplots = [
+    #display a row that is the endmember fractions
+    endmember_fraction_scatterplots = [
         latdepth_scatterplot(
             basechart=obs_basechart,
             selection=interval_selection,
             property_name=property_name,
             altairdf=altairdf)
-        for property_name in watermass_names]
+        for property_name in endmember_names]
 
     if (ompa_problems_arr[0].total_oxygen_deficit is not None):
         oxygen_deficit_scatterplot = latdepth_scatterplot(
@@ -391,7 +396,7 @@ def build_thermocline_altair_viz(ompa_problems_arr,
                 pp_scatterplot(
                     obs_basechart=obs_basechart,
                     selection=interval_selection,
-                    watermass_basechart=watermass_basechart,
+                    endmember_basechart=endmember_basechart,
                     property1=param_names[i],
                     property2=param_names[j],
                     opacity=1)
@@ -426,7 +431,7 @@ def build_thermocline_altair_viz(ompa_problems_arr,
     ]
 
     return alt.vconcat(*(
-      [wrap_scatterplots(watermass_fraction_scatterplots)]
+      [wrap_scatterplots(endmember_fraction_scatterplots)]
       +([oxygen_deficit_scatterplot,
         wrap_scatterplots(conversion_ratio_scatterplots,
                           resolve_scale="independent")]
