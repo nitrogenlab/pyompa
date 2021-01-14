@@ -25,8 +25,9 @@ def plot_endmember_usagepenalties(endmembername_to_usagepenalty,
     plt.show()
 
 
-def plot_endmember_usagepenalties(ompa_soln, endmembername_to_usagepenalty,
-                                  xaxis_colname, yaxis_colname, flip_y):
+def plot_ompasoln_endmember_usagepenalties(
+        ompa_soln, endmembername_to_usagepenalty,
+        xaxis_colname, yaxis_colname, flip_y):
     plot_endmember_usagepenalties(
         endmembername_to_usagepenalty=
             ompa_soln.ompa_problem.endmembername_to_usagepenalty,
