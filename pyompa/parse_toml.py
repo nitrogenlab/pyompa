@@ -77,7 +77,7 @@ def parse_params(config):
             conversionratios)
 
 
-def run_analysis_from_toml_file(toml_config_file):
+def find_ompa_solution_given_toml_file(toml_config_file):
     config = toml.loads(open(toml_config_file).read())
     assert_compatible_keys(the_dict=config,
           allowed=["observations", "params", "endmembers",
