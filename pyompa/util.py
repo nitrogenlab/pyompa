@@ -1,4 +1,11 @@
-#from __future__ import division, print_function
+from __future__ import division, print_function
+
+
+def assert_in(value, allowed, errorprefix):
+    assert value in allowed,\
+        errorprefix+str(value)+" not in allowed values: "+str(allowed)
+
+
 #import gsw
 #
 #
