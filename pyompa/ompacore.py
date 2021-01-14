@@ -176,7 +176,8 @@ class OMPAProblem(object):
         
         #determine which conversion sign is better
         positive_conversionsign_isbetter = (
-            perobs_weighted_resid_sq < perobs_weighted_resid_sq)
+            perobs_weighted_resid_sq_positiveconversionsign <
+            perobs_weighted_resid_sq_negativeconversionsign)
         final_conversion_signconstraints = (
             1.0*positive_conversionsign_isbetter
             + -1.0*(positive_conversionsign_isbetter==False))
