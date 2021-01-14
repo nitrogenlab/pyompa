@@ -203,9 +203,8 @@ def nozero_yaxis(field_name, domain=None):
 
 
 def transect_scatterplot(basechart, selection,
-                         property_name, altairdf, zerocenter=False,
-                         xaxis_colname, yaxis_colname,
-                         flip_y=True):
+                         property_name, altairdf, xaxis_colname, yaxis_colname,
+                         zerocenter=False, flip_y=True):
     additional_color_kwargs = {}
     if (zerocenter):
         max_abs_property = np.max(np.abs(altairdf[property_name]))
