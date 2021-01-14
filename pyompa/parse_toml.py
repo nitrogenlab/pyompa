@@ -2,7 +2,7 @@ from __future__ import division
 import toml
 import pandas as pd
 from .ompacore import OMPAProblem
-from .endmemberpenaltyfunc import 
+from .endmemberpenaltyfunc import EndMemExpPenaltyFunc 
 from .util import assert_in, assert_compatible_keys, assert_has_keys
 from collections import OrderedDict
 
