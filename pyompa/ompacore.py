@@ -115,7 +115,6 @@ class OMPAProblem(object):
             print("Adding penalty for",endmembername)
             penalty = penalty_func(self.obs_df)
             self.endmembername_to_usagepenalty[endmembername] = penalty
-        return endmember_usagepenalty
 
     def prep_endmember_usagepenalty_mat(self, endmember_names):
         endmember_usagepenalty = np.zeros((len(self.obs_df),
