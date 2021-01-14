@@ -56,7 +56,7 @@ class GetEndMemExpPenaltyFunc(object):
         self.process_spec()
 
     def validate_spec(self):
-        for colname,spec_for_col in self.spec:
+        for colname,spec_for_col in self.spec.items():
             for spec_key in spec_for_col:
                 assert_in(
                   value=spec_key,
