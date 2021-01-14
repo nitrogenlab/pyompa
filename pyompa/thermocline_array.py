@@ -65,7 +65,7 @@ class ThermoclineArrayOMPAProblem(object):
 
     def __init__(self, stratification_col,
                        tc_lower_bound, tc_upper_bound, tc_step,
-                       endmemnames_to_use, endmemname_to_df, obs_df,
+                       obs_df,
                        paramsandweighting_conserved,
                        paramsandweighting_converted,
                        conversionratios,
@@ -74,8 +74,6 @@ class ThermoclineArrayOMPAProblem(object):
         self.tc_lower_bound = tc_lower_bound
         self.tc_upper_bound = tc_upper_bound
         self.tc_step = tc_step
-        self.endmemnames_to_use = endmemnames_to_use
-        self.endmemname_to_df = endmemname_to_df
         self.obs_df = obs_df
         self.paramsandweighting_conserved = paramsandweighting_conserved
         self.paramsandweighting_converted = paramsandweighting_converted
