@@ -47,7 +47,7 @@ def get_endmember_df_for_range(endmemnames_to_use,
 class ThermoclineArraySoln(object):
 
     def __init__(self, endmemname_to_df,
-                       endmember_name_column=endmember_name_column,
+                       endmember_name_column,
                        endmemnames_to_use,
                        thermocline_ompa_problem, thermocline_ompa_results):
         self.endmemname_to_df = endmemname_to_df
