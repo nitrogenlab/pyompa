@@ -1,6 +1,6 @@
 from __future__ import division, print_function
 import numpy as np
-from .util import assert_in, assert_compatible_keys 
+from .util import assert_in, assert_compatible_keys, assert_has_keys 
 
 
 def get_exponential_from_bounds_func(alpha, beta,
