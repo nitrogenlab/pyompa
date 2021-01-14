@@ -13,15 +13,17 @@ def plot_endmember_usagepenalties(endmembername_to_usagepenalty,
     num_figs = len(endmembernames)
     fig, ax = plt.subplots(nrows=1, ncols=num_figs, figsize=(5*num_figs,4))
     for i in range(len(endmembernames)):
+        endmembername = endmembernames[i]
         plt.sca(ax[i])
-        plt.scatter(xaxis_vals, yaxis_vals, c=penalty)
+        plt.scatter(xaxis_vals, yaxis_vals,
+                    c=endmembername_to_usagepenalty[endmembername])
         plt.xlabel(xaxis_label)
         if (i==0):
             plt.ylabel(yaxis_label)
         if (flip_y):
             plt.ylim(plt.ylim()[1], plt.ylim()[0])
         plt.colorbar()
-        plt.title(endmembernames[i])
+        plt.title(endmembername)
     plt.show()
 
 
