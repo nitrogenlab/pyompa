@@ -25,7 +25,7 @@ def get_endmember_df_for_range(endmemnames_to_use,
         correct_rows_for_endmemname = pd.DataFrame(
             df[(df[stratification_col] >= bin_start) &
                (df[stratification_col] < bin_end)])
-        correct_rows_for_endmemname[endmember_name_column] = endmember_name
+        correct_rows_for_endmemname[endmember_name_column] = endmemname
         #correct_rows_for_endmemname should have a length of 1 (there should
         # be only one row for each bin), so let's verify that with
         # an 'assert' statement.
