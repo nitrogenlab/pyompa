@@ -4,29 +4,33 @@ import numpy as np
 import pandas as pd
 
 
-def get_endmember_df_for_sig0_range(endmemnames_to_use,
-                                    endmemname_to_df,
-                                    sig0_bin_start,
-                                    sig0_bin_end):
+def get_endmember_df_for_range(endmemnames_to_use,
+                               endmemname_to_df,
+                               stratification_col,
+                               bin_start, bin_end):
     #Idea: for each entry in endmemname_to_df, filter out the row
-    # that lies within sig0_bin_start and sig0_bin_end (there should
+    # that lies within bin_start and bin_end (there should
     # only be one such row). Then assemble all those rows into a data frame
-    # of the endmembers to use for the OMPA analysis, for that sig0 range
+    # of the endmembers to use for the OMPA analysis, for that range
 
     #We'll create a list of the correct rows from each pandas df
     correct_rows = []
-    sig0_bin_start = np.round(sig0_bin_start, decimals=2)
-    sig0_bin_end = np.round(sig0_bin_end, decimals=2)
+    bin_start = np.round(bin_start, decimals=2)
+    bin_end = np.round(bin_end, decimals=2)
     for endmemname in endmemnames_to_use:
         #apply a filtering to endmemname_to_df to get the right
-        # row corresponding to the sig0 range
+        # row corresponding to the range
         df = endmemname_to_df[endmemname]
-        correct_rows_for_endmemname =\
-        df[(df["sig0"] >= sig0_bin_start) & (df["sig0"] < sig0_bin_end)]
+        correct_rows_for_endmemname = (
+            df[(df[stratification_col] >= bin_start) &
+               (df[stratification_col] < bin_end)])
         #correct_rows_for_endmemname should have a length of 1 (there should
-        # be only one row for each sig0 bin), so let's verify that with
+        # be only one row for each bin), so let's verify that with
         # an 'assert' statement.
-        assert len(correct_rows_for_endmemname)==1
+        assert len(correct_rows_for_endmemname)==1, (
+         "Too many rows for bin "+str(bin_start)+" to "+str(bin_end)
+         +" for column "+stratification_col
+         +":\n"+str(correct_rows_for_endmemname))
         #Store the row from this end member dataframe in
         # the list of correct rows
         correct_rows.append(correct_rows_for_endmemname)  
@@ -38,14 +42,35 @@ def get_endmember_df_for_sig0_range(endmemnames_to_use,
     return paired_up_endmember_df
 
 
+class ThermoclineArraySoln(object):
+
+    def __init__(self, endmemnames_to_df, endmemnames_to_use,
+                       thermocline_ompa_problem, thermocline_ompa_results):
+        self.endmemnames_to_df = endmemnames_to_df
+        self.endmemnames_to_use = endmemnames_to_use
+        self.thermocline_ompa_problem = thermocline_ompa_problem
+        self.thermocline_ompa_results = thermocline_ompa_results
+
+    def __len__(self):
+        return len(self.thermocline_ompa_results)
+
+    def __getitem__(self, i):
+        return self.thermocline_ompa_results[i]
+
+    def __iter__(self):
+        return self.thermocline_ompa_results.__iter__()
+
+
 class ThermoclineArrayOMPAProblem(object):
 
-    def __init__(self, tc_lower_bound, tc_upper_bound, tc_step,
+    def __init__(self, stratification_col,
+                       tc_lower_bound, tc_upper_bound, tc_step,
                        endmemnames_to_use, endmemname_to_df, obs_df,
                        paramsandweighting_conserved,
                        paramsandweighting_converted,
                        conversionratios,
                        watermassname_to_usagepenaltyfunc={}):
+        self.stratification_col = stratification_col
         self.tc_lower_bound = tc_lower_bound
         self.tc_upper_bound = tc_upper_bound
         self.tc_step = tc_step
@@ -58,26 +83,29 @@ class ThermoclineArrayOMPAProblem(object):
         self.watermassname_to_usagepenaltyfunc =\
             watermassname_to_usagepenaltyfunc
 
-    def solve(self):      
+    def solve(self, endmemnames_to_df, endmemnames_to_use=None): 
+        if (endmemnames_to_use is None):
+            endmemnames_to_use = sorted(endmemname_to_df.keys())
         thermocline_ompa_results = []
-        for sig0_bin_start in np.arange(self.tc_lower_bound,
+        for bin_start in np.arange(self.tc_lower_bound,
                                         self.tc_upper_bound, self.tc_step):
-            sig0_bin_end = sig0_bin_start + self.tc_step
+            bin_end = bin_start + self.tc_step
             #Get the endmember dataframe for OMPA analysis corresponding to the
             #sig0 range 
             endmember_df_for_sig0_range =\
-              get_endmember_df_for_sig0_range(
+              get_endmember_df_for_range(
+                  stratification_col=self.stratification_col,
                   endmemnames_to_use=self.endmemnames_to_use,
                   endmemname_to_df=self.endmemname_to_df,
-                  sig0_bin_start=sig0_bin_start,
-                  sig0_bin_end=sig0_bin_end)
+                  bin_start=bin_start,
+                  bin_end=bin_end)
 
-            #filter gp15_thermocline using sig0_bin_start and sig0_bin_end
+            #filter gp15_thermocline using bin_start and bin_end
             obs_df_for_sig0_range = self.obs_df[
-                                  (self.obs_df["sig0"] >= sig0_bin_start)
-                                  & (self.obs_df["sig0"] <= sig0_bin_end)]
+                                  (self.obs_df["sig0"] >= bin_start)
+                                  & (self.obs_df["sig0"] <= bin_end)]
             if (len(obs_df_for_sig0_range)==0):
-              print("No observations for range", sig0_bin_start, sig0_bin_end)
+              print("No observations for range", bin_start, bin_end)
               continue #skip this iteration of the loop
             
             #Now that you have the data frames for the observations and
@@ -107,7 +135,9 @@ class ThermoclineArrayOMPAProblem(object):
 
         self.thermocline_ompa_results = thermocline_ompa_results
 
-        return thermocline_ompa_results
-    
+        return ThermoclineArraySoln(
+                 endmemnames_to_df=endmemname_to_df,
+                 endmemnames_to_use=endmemnames_to_use,
+                 thermocline_ompa_problem=self,
+                 thermocline_ompa_results=thermocline_ompa_results)
 
-    
