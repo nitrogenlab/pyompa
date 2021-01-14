@@ -83,14 +83,14 @@ class ThermoclineArrayOMPAProblem(object):
             #Now that you have the data frames for the observations and
             # end members, you can define the ompa problem
             ompa_soln = OMPAProblem(
-                endmember_df=endmember_df_for_sig0_range,
                 obs_df=obs_df_for_sig0_range, 
                 paramsandweighting_conserved=self.paramsandweighting_conserved,
                 paramsandweighting_converted=self.paramsandweighting_converted,
                 conversionratios=self.conversionratios,
                 smoothness_lambda=None,
                 watermassname_to_usagepenaltyfunc=
-                  self.watermassname_to_usagepenaltyfunc).solve()
+                  self.watermassname_to_usagepenaltyfunc).solve(
+                    endmember_df=endmember_df_for_sig0_range)
             if (ompa_soln.status is not "infeasible"):
                 thermocline_ompa_results.append(ompa_soln)
             else:
