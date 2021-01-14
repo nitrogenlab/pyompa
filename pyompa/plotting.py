@@ -109,7 +109,7 @@ def plot_thermocline_residuals(ompa_problems_arr):
 
     plot_residuals(
         param_residuals=param_residuals,
-        param_names=params_to_use,
+        param_names=param_names,
         latitudes=latitudes,
         depths=depths)
 
