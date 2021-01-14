@@ -72,7 +72,7 @@ class GetEndMemExpPenaltyFunc(object):
 
     def process_spec(self):
         colname_to_penaltyfunc = {}
-        for colname, spec_for_col in self.spec: 
+        for colname, spec_for_col in self.spec.items(): 
             factory_func = self.SPECTYPE_TO_FACTORYFUNC[spec_for_col['type']] 
             #gather the arguments going into the factory function
             factory_func_keys = spec_for_col.copy() 
