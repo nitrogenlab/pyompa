@@ -230,7 +230,7 @@ class OMPAProblem(object):
                   status=prob.status,
                   water_mass_fractions=water_mass_fractions,
                   oxygen_deficits=oxygen_deficits,
-                  resid_wsumsq=np.sum(resid_wsumsq),
+                  resid_wsumsq=np.sum(perobs_weighted_resid_sq),
                   param_residuals=param_residuals,
                   total_oxygen_deficit=total_oxygen_deficit,
                   effective_conversion_ratios=effective_conversion_ratios)
