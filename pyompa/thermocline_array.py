@@ -92,8 +92,8 @@ class ThermoclineArrayOMPAProblem(object):
                                         self.tc_upper_bound, self.tc_step):
             bin_end = bin_start + self.tc_step
             #Get the endmember dataframe for OMPA analysis corresponding to the
-            #sig0 range 
-            endmember_df_for_sig0_range =\
+            #range 
+            endmember_df_for_range =\
               get_endmember_df_for_range(
                   stratification_col=self.stratification_col,
                   endmemnames_to_use=endmemnames_to_use,
@@ -103,24 +103,24 @@ class ThermoclineArrayOMPAProblem(object):
                   bin_end=bin_end)
 
             #filter gp15_thermocline using bin_start and bin_end
-            obs_df_for_sig0_range = self.obs_df[
-                                  (self.obs_df["sig0"] >= bin_start)
-                                  & (self.obs_df["sig0"] <= bin_end)]
-            if (len(obs_df_for_sig0_range)==0):
+            obs_df_for_range = self.obs_df[
+                          (self.obs_df[self.stratification_col] >= bin_start)
+                          & (self.obs_df[self.stratification_col] <= bin_end)]
+            if (len(obs_df_for_range)==0):
               print("No observations for range", bin_start, bin_end)
               continue #skip this iteration of the loop
             
             #Now that you have the data frames for the observations and
             # end members, you can define the ompa problem
             ompa_soln = OMPAProblem(
-                obs_df=obs_df_for_sig0_range, 
+                obs_df=obs_df_for_range, 
                 paramsandweighting_conserved=self.paramsandweighting_conserved,
                 paramsandweighting_converted=self.paramsandweighting_converted,
                 conversionratios=self.conversionratios,
                 smoothness_lambda=None,
                 endmembername_to_usagepenaltyfunc=
                   self.endmembername_to_usagepenaltyfunc).solve(
-                    endmember_df=endmember_df_for_sig0_range,
+                    endmember_df=endmember_df_for_range,
                     endmember_name_column=endmember_name_column)
             if (ompa_soln.status is not "infeasible"):
                 thermocline_ompa_results.append(ompa_soln)
@@ -130,10 +130,10 @@ class ThermoclineArrayOMPAProblem(object):
                 cols_to_print = (
                  [x[0] for x in thermocline_paramsandweighting[0]]
                  +[x[0] for x in thermocline_paramsandweighting[1]]
-                 +["sig0"])
-                print(obs_df_for_sig0_range[cols_to_print])
+                 +[self.stratification_col])
+                print(obs_df_for_range[cols_to_print])
                 print("endmember df:")
-                print(endmember_df_for_sig0_range[cols_to_print])
+                print(endmember_df_for_range[cols_to_print])
                 print("Try lowering the parameter weights!")
 
         self.thermocline_ompa_results = thermocline_ompa_results
