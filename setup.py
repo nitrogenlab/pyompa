@@ -10,5 +10,5 @@ if __name__== '__main__':
           setup_requires=[],
           install_requires=['numpy', 'pandas', 'cvxpy', 'scipy'],
           extras_require={'altair': ['altair']},
-          #scripts=['scripts/run_ompa_from_config'],
+          scripts=['scripts/run_ompa_given_config'],
           name='pyompa')

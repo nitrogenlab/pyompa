@@ -11,4 +11,4 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("config_file", type=string, help="Configuration file")
+    parser.add_argument("config_file", help="Configuration file")
