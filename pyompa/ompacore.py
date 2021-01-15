@@ -166,6 +166,13 @@ class OMPAProblem(object):
             if endmembername in self.endmembername_to_usagepenalty:
                 endmember_usagepenalty[:,endmemberidx] =\
                     self.endmembername_to_usagepenalty[endmembername]
+        #print a warning if specified a usage penalty that was not used
+        for endmembername in self.endmembername_to_usagepenalty:
+            if endmembername not in endmember_names:
+                print("WARNING!!! You specified a usage penalty for "
+                 +str(endmembername)+" but that endmember did not appear "
+                 +"in the endmember data frame")
+                 
         return endmember_usagepenalty
 
     def get_b(self):
