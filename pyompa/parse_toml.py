@@ -34,7 +34,7 @@ def parse_endmembers_config(config):
           allowed=PARSE_DF_ALLOWED_KEYS+["endmember_name_column"],
           errorprefix="Issue when parsing endmembers config: ")  
     assert_has_keys(the_dict=config,
-          required=["endmembers"],
+          required=["endmember_name_column"],
           errorprefix="Issue when parsing endmembers config: ")  
     endmembers_df =\
         parse_df_from_config(config=config, config_file_type="endmembers")
