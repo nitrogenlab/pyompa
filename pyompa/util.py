@@ -12,7 +12,7 @@ def assert_in(value, allowed, errorprefix):
 
 
 def assert_has_keys(the_dict, required, errorprefix):
-    for key in required_keys:
+    for key in required:
         assert key in the_dict, (
             errorprefix+key+" must be specified. Provided keys are: "
             +str(the_dict.keys()))
