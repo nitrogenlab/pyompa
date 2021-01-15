@@ -8,7 +8,7 @@ if __name__== '__main__':
           version='0.3.0.0',
           packages=['pyompa'],
           setup_requires=[],
-          install_requires=['numpy', 'pandas', 'cvxpy', 'scipy'],
+          install_requires=['numpy', 'pandas', 'cvxpy', 'scipy', 'toml'],
           extras_require={'altair': ['altair']},
           scripts=['scripts/run_ompa_given_config'],
           name='pyompa')

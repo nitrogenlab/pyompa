@@ -126,3 +126,7 @@ def run_ompa_given_config(config):
         ompa_soln.export_to_csv(**config["export"])
 
     return ompa_soln
+
+
+def run_ompa_given_toml_config_file(toml_config_file):
+    return run_ompa_given_config(toml.loads(open(toml_config_file)))
