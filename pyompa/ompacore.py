@@ -291,8 +291,9 @@ class OMPAProblem(object):
                               +" oxygen deficits:", oxygen_deficit)
             total_oxygen_deficit = np.sum(oxygen_deficits, axis=-1)
             #proportions of oxygen use at differnet ratios
+            #np.maximum(...) is to avoid division by zero errors
             oxygen_usage_proportions = (oxygen_deficits/
-                                        total_oxygen_deficit[:,None])
+                              np.maximum(total_oxygen_deficit[:,None], 1e-7))
             #Reminder: conversion_ratios has dims of
             # num_conversion_ratios x num_converted_params
             #oxygen_usage_proportions has dims of
