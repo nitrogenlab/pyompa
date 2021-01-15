@@ -101,6 +101,12 @@ class OMPAProblem(object):
         else:
             self.converted_params_to_use, self.converted_weighting = [], []
 
+        for param_name in (self.conserved_params_to_use
+                           +self.converted_params_to_use):
+            assert param_name in self.obs_df,\
+                (param_name+" not specified in obs_df; obs_df columns are "
+                 +str(self.obs_df.columns))
+
         if (max(self.converted_weighting+self.conserved_weighting) > 100):
             print("Warning: having very large param weights can lead to"
                   +" instability in the optimizer! Consider scaling down"
@@ -156,6 +162,12 @@ class OMPAProblem(object):
                                      +self.converted_params_to_use])
 
     def solve(self, endmember_df, endmember_name_column):
+
+        for param_name in (self.conserved_params_to_use
+                           +self.converted_params_to_use):
+            assert param_name in endmember_df,\
+                (param_name+" not specified in endmemebr_df where columns are "
+                 +str(endmember_df.columns))
 
         endmember_names = list(endmember_df[endmember_name_column])
 
