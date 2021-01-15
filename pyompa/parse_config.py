@@ -129,4 +129,4 @@ def run_ompa_given_config(config):
 
 
 def run_ompa_given_toml_config_file(toml_config_file):
-    return run_ompa_given_config(toml.loads(open(toml_config_file)))
+    return run_ompa_given_config(toml.loads(open(toml_config_file).read()))
