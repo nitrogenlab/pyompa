@@ -6,6 +6,7 @@ from .endmemberpenaltyfunc import EndMemExpPenaltyFunc
 from .util import assert_in, assert_compatible_keys, assert_has_keys
 from collections import OrderedDict
 from .plotting import plot_ompaproblem_endmember_usagepenalties
+import json
 
 
 PARSE_DF_ALLOWED_KEYS = ["csv_file", "na_values"]
@@ -79,6 +80,8 @@ def parse_params(config):
 
 
 def run_ompa_given_config(config):
+    print("Received Config:")
+    print(json.dumps(config, indent=4))
     assert_compatible_keys(the_dict=config,
           allowed=["observations", "params", "endmembers",
                    "endmember_penalties", "export"],

@@ -134,7 +134,8 @@ class OMPAProblem(object):
         for param_name in (self.conserved_params_to_use
                            +self.converted_params_to_use):
             assert param_name in self.obs_df,\
-                (param_name+" not specified in obs_df; obs_df columns are "
+                (param_name+" not specified in observations data frame;"
+                 +" observations data frame columns are "
                  +str(list(self.obs_df.columns)))
 
         if (max(self.converted_weighting+self.conserved_weighting) > 100):
