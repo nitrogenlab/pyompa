@@ -256,9 +256,9 @@ class OMPAProblem(object):
             # precision
             for oxygen_deficit in oxygen_deficits:
                 if (len(oxygen_deficit) > 0):
-                    if ((all(oxygen_deficit > -1e-5) or
-                         all(oxygen_deficit < 1e-5))==False):
-                        print("WARNING: potential sign inconsistency in"
+                    if ((all(oxygen_deficit >= 0) or
+                         all(oxygen_deficit <= 0))==False):
+                        print("WARNING: sign inconsistency in"
                               +" oxygen deficits:", oxygen_deficit)
             total_oxygen_deficit = np.sum(oxygen_deficits, axis=-1)
             #proportions of oxygen use at differnet ratios
