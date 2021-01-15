@@ -105,7 +105,7 @@ class OMPAProblem(object):
                            +self.converted_params_to_use):
             assert param_name in self.obs_df,\
                 (param_name+" not specified in obs_df; obs_df columns are "
-                 +str(self.obs_df.columns))
+                 +str(list(self.obs_df.columns)))
 
         if (max(self.converted_weighting+self.conserved_weighting) > 100):
             print("Warning: having very large param weights can lead to"
@@ -167,7 +167,7 @@ class OMPAProblem(object):
                            +self.converted_params_to_use):
             assert param_name in endmember_df,\
                 (param_name+" not specified in endmemebr_df where columns are "
-                 +str(endmember_df.columns))
+                 +str(list(endmember_df.columns)))
 
         endmember_names = list(endmember_df[endmember_name_column])
 
