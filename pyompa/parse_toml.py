@@ -68,7 +68,7 @@ def parse_params(config):
             assert "ratios" in param_config, ("'ratios' must be specified for "
               +"param "+param_name+" if remineralized=true")
             ratios = param_config["ratios"]
-            conversion_ratios[param_name] = ratios 
+            conversionratios[param_name] = ratios 
         else:
             paramsandweighting_conserved.append((param_name, weight))
             assert "ratios" not in param_config, ("'ratios' is only applicable "
