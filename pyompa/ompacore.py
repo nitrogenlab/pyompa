@@ -31,7 +31,7 @@ class OMPASoln(object):
         toexport_df_dict = OrderedDict()
 
         endmembernames=list(
-            ompa_soln.endmember_df[ompa_soln.endmember_name_column])
+            self.endmember_df[self.endmember_name_column])
         for endmember_idx in range(len(endmembernames)):
             toexport_df_dict[endmembernames[endmember_idx]] =\
                 self.endmember_fractions[:,endmember_idx]
