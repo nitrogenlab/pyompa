@@ -81,7 +81,7 @@ def parse_params(config):
 def run_ompa_given_config(config):
     assert_compatible_keys(the_dict=config,
           allowed=["observations", "params", "endmembers",
-                   "endmember_penalties"],
+                   "endmember_penalties", "export"],
           errorprefix="Issue when parsing toml config: ")  
     assert_has_keys(the_dict=config,
           required=["observations", "params", "endmembers"],
