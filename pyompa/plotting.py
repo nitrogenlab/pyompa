@@ -2,7 +2,6 @@ from __future__ import division, print_function
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-import altair as alt
 
 
 def plot_endmember_usagepenalties(endmembername_to_usagepenalty,
@@ -194,10 +193,12 @@ def plot_thermocline_residuals(ompa_problems_arr, xaxis_colname, yaxis_colname,
 
 
 def nozero_xaxis(field_name):
+  import altair as alt
   return alt.X(field_name, scale=alt.Scale(zero=False))
 
 
 def nozero_yaxis(field_name, domain=None):
+  import altair as alt
   if (domain is None):
     return alt.Y(field_name, scale=alt.Scale(zero=False))
   else:
@@ -207,6 +208,7 @@ def nozero_yaxis(field_name, domain=None):
 def transect_scatterplot(basechart, selection,
                          property_name, altairdf, xaxis_colname, yaxis_colname,
                          zerocenter=False, flip_y=True):
+    import altair as alt
     additional_color_kwargs = {}
     if (zerocenter):
         max_abs_property = np.max(np.abs(altairdf[property_name]))
@@ -226,6 +228,7 @@ def transect_scatterplot(basechart, selection,
            
 
 def wrap_scatterplots(scatterplots, resolve_scale='shared', rowsize=7):
+    import altair as alt
     hconcats = [
         alt.hconcat(*scatterplots[i:i+rowsize]).resolve_scale(
             color=resolve_scale)
@@ -237,6 +240,7 @@ def wrap_scatterplots(scatterplots, resolve_scale='shared', rowsize=7):
 def pp_scatterplot(obs_basechart, selection,
                    endmember_basechart,
                    property1, property2, opacity):
+    import altair as alt
     color = alt.condition(selection, alt.value('lightblue'),
                           alt.value('lightgray'))
     return (obs_basechart.mark_point(opacity=opacity).encode(
@@ -391,7 +395,7 @@ def build_thermocline_altair_viz(ompa_problems_arr,
                                  xaxis_colname, yaxis_colname,
                                  chart_width=200, chart_height=200,
                                  flip_y=True, extra_tooltip_cols=[]):
-
+    import altair as alt
     #verify endmember names are the same for all
     endmember_name_column = ompa_problems_arr[0].endmember_name_column
     endmember_names = tuple(ompa_problems_arr[0].endmember_df[
