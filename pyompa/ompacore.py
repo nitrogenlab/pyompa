@@ -30,6 +30,9 @@ class OMPASoln(object):
                             orig_cols_to_include=[], **kwargs):
         toexport_df_dict = OrderedDict()
 
+        for orig_col in orig_cols_to_include:
+            toexport_df_dict[orig_col] = self.obs_df[orig_col]
+
         endmembernames=list(
             self.endmember_df[self.endmember_name_column])
         for endmember_idx in range(len(endmembernames)):
@@ -44,9 +47,6 @@ class OMPASoln(object):
                          self.converted_params_to_use[converted_param_idx]
                          +" ratio"] =\
                     1.0/self.effective_conversion_ratios[:,converted_param_idx]
-
-        for orig_col in orig_cols_to_include:
-            toexport_df_dict[orig_col] = self.obs_df[orig_col]
         
         toexport_df = pd.DataFrame(toexport_df_dict)
         toexport_df.to_csv(csv_output_name, index=False, **kwargs)
