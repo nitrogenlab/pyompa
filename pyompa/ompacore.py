@@ -300,7 +300,7 @@ class OMPAProblem(object):
                               +" oxygen deficits:", oxygen_deficit)
             total_oxygen_deficit = np.sum(oxygen_deficits, axis=-1)
             #proportions of oxygen use at differnet ratios
-            with np.errstate(divide='ignore'):
+            with np.errstate(divide='ignore', invalid='ignore'):
                 oxygen_usage_proportions = (
                     oxygen_deficits/total_oxygen_deficit[:,None])
                 #Reminder: conversion_ratios has dims of
