@@ -1,2 +1,2 @@
 # pyompa
-python package for OMPA analysis
+python package for OMPA analysis.
