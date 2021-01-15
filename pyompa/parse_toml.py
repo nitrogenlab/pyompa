@@ -14,7 +14,7 @@ def parse_df_from_config(config, config_file_type):
     assert "csv_file" in config,\
         "Need argument 'csv_file' when parsing "+config_file_type+" config"
     assert_has_keys(the_dict=config,
-          allowed=["csv_file"],
+          required=["csv_file"],
           errorprefix="Issue when parsing "+config_file_type+" config: ")  
     kwargs = {}
     if ("na_values" in config):
@@ -34,7 +34,7 @@ def parse_endmembers_config(config):
           allowed=PARSE_DF_ALLOWED_KEYS+["endmember_name_column"],
           errorprefix="Issue when parsing endmembers config: ")  
     assert_has_keys(the_dict=config,
-          allowed=["endmembers"],
+          required=["endmembers"],
           errorprefix="Issue when parsing endmembers config: ")  
     endmembers_df =\
         parse_df_from_config(config=config, config_file_type="endmembers")
@@ -59,7 +59,7 @@ def parse_params(config):
             allowed=PARSE_PARAMS_ALLOWED_KEYS,
             errorprefix="Issue when parsing param config for "+param_name+": ") 
         assert_has_keys(the_dict=param_config,
-            allowed=["weight", "remineralized"],
+            required=["weight", "remineralized"],
             errorprefix="Issue when parsing param config for "+param_name+": ")
         weight = param_config["weight"]
         remineralized = param_config["remineralized"]
@@ -84,7 +84,7 @@ def find_ompa_solution_given_toml_file(toml_config_file):
                    "endmember_penalties"],
           errorprefix="Issue when parsing toml config: ")  
     assert_has_keys(the_dict=config,
-          allowed=["observations", "params", "endmembers"],
+          required=["observations", "params", "endmembers"],
           errorprefix="Issue when parsing toml config: ")  
 
     obs_df = parse_observations_config(config=config["observations"]) 

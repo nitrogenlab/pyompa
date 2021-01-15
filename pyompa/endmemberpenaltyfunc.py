@@ -57,7 +57,7 @@ class EndMemExpPenaltyFunc(object):
               the_dict=spec_for_col,
               allowed=['type', 'lowerbound', 'upperbound', 'alpha', 'beta'],
               errorprefix="Problem with "+str(colname)+" penalty config: ") 
-            assert_has_keys(the_dict=spec_for_col, required_keys=["type"],
+            assert_has_keys(the_dict=spec_for_col, required=["type"],
                             errorprefix="Problem with "+str(colname)
                                         +" penalty config: ")
             assert_in(

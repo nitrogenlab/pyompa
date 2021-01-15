@@ -11,7 +11,7 @@ def assert_in(value, allowed, errorprefix):
         errorprefix+str(value)+" not in allowed values: "+str(allowed)
 
 
-def assert_has_keys(the_dict, required_keys, errorprefix):
+def assert_has_keys(the_dict, required, errorprefix):
     for key in required_keys:
         assert key in the_dict, (
             errorprefix+key+" must be specified. Provided keys are: "
