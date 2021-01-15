@@ -125,7 +125,7 @@ class ThermoclineArrayOMPAProblem(object):
                   self.endmembername_to_usagepenaltyfunc).solve(
                     endmember_df=endmember_df_for_range,
                     endmember_name_column=endmember_name_column)
-            if (ompa_soln.status is not "infeasible"):
+            if (ompa_soln.status != "infeasible"):
                 thermocline_ompa_results.append(ompa_soln)
             else:
                 print("Warning! Infeasible for:")
