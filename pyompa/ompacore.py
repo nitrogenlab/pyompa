@@ -49,7 +49,7 @@ class OMPASoln(object):
             toexport_df_dict[orig_col] = self.obs_df[orig_col]
         
         toexport_df = pd.DataFrame(toexport_df_dict)
-        toexport_df.to_csv(csv_output_name, index_label=False, **kwargs)
+        toexport_df.to_csv(csv_output_name, index=False, **kwargs)
 
     def iteratively_refine_ompa_soln(self, num_iterations):
         init_endmember_df = self.ompa_problem.construct_ideal_endmembers(
