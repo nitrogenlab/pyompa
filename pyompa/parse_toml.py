@@ -54,7 +54,7 @@ def parse_params(config):
     paramsandweighting_converted = []
     conversionratios = {}
     for param_name in config:
-        param_config = config[paramname]
+        param_config = config[param_name]
         assert_compatible_keys(the_dict=param_config,
             allowed=PARSE_PARAMS_ALLOWED_KEYS,
             errorprefix="Issue when parsing param config for "+param_name+": ") 
