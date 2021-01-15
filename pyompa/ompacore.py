@@ -37,6 +37,8 @@ class OMPASoln(object):
                             export_conversion_ratios=True,
                             export_endmember_usage_penalties=False):
 
+        print("writing to",csv_output_name)
+
         toexport_df_dict = OrderedDict()
 
         if (export_orig_param_vals):
