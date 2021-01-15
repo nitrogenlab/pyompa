@@ -147,10 +147,14 @@ class OMPAProblem(object):
         # convertedparams_ratios:
         assert all([(x in self.conversionratios)
                      for x in self.converted_params_to_use])
-        #also assert that every entry in convertedratios has the same length
-        assert len(set([len(x) for x in self.conversionratios.values()])) == 1
-        self.num_conversion_ratios = len(
-            list(self.conversionratios.values())[0])
+        if (len(self.converted_params_to_use) > 0):
+            #also assert that every entry in convertedratios has the same length
+            assert len(set([len(x) for x in 
+                       self.conversionratios.values()])) == 1, conversionratios
+            self.num_conversion_ratios = len(
+                list(self.conversionratios.values())[0])
+        else:
+            self.num_conversion_ratios = 0
 
     def prep_endmember_usagepenalties(self):
         self.endmembername_to_usagepenalty = OrderedDict()
@@ -220,8 +224,11 @@ class OMPAProblem(object):
         conversion_ratios, conversion_ratio_rows =\
             self.get_conversion_ratio_rows_of_A()
         #add a row to A for the ratios
-        A = np.concatenate([self.get_endmem_mat(endmember_df),
-                            conversion_ratio_rows], axis=0)
+        if (len(conversion_ratio_rows > 0)):
+            A = np.concatenate([self.get_endmem_mat(endmember_df),
+                                conversion_ratio_rows], axis=0)
+        else:
+            A = self.get_endmem_mat(endmember_df)
 
         #prepare b
         b = self.get_b()
