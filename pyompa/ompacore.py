@@ -13,6 +13,7 @@ class OMPASoln(object):
                        ompa_problem,
                        endmember_fractions,
                        total_oxygen_deficit,
+                       param_residuals,
                        effective_conversion_ratios,
                        **kwargs):
         self.endmember_df = endmember_df
@@ -20,6 +21,7 @@ class OMPASoln(object):
         self.ompa_problem = ompa_problem
         self.endmember_fractions = endmember_fractions
         self.total_oxygen_deficit = total_oxygen_deficit
+        self.param_residuals = param_residuals
         self.effective_conversion_ratios = effective_conversion_ratios
         self.obs_df = ompa_problem.obs_df
         self.conserved_params_to_use = ompa_problem.conserved_params_to_use
@@ -27,26 +29,53 @@ class OMPASoln(object):
         self.__dict__.update(kwargs)
 
     def export_to_csv(self, csv_output_name,
-                            orig_cols_to_include=[], **kwargs):
+                            orig_cols_to_include=[],
+                            export_orig_param_vals=True,
+                            export_residuals=True,
+                            export_endmember_fracs=True,
+                            export_oxygen_deficit=True,
+                            export_conversion_ratios=True,
+                            export_endmember_usage_penalties=False):
+
         toexport_df_dict = OrderedDict()
+
+        if (export_orig_param_vals):
+            orig_cols_to_include += (
+             self.conserved_params_to_use+self.converted_params_to_use)
 
         for orig_col in orig_cols_to_include:
             toexport_df_dict[orig_col] = self.obs_df[orig_col]
 
-        endmembernames=list(
-            self.endmember_df[self.endmember_name_column])
-        for endmember_idx in range(len(endmembernames)):
-            toexport_df_dict[endmembernames[endmember_idx]] =\
-                self.endmember_fractions[:,endmember_idx]
+        if (export_residuals):
+             for param_idx,param_name in enumerate(
+                self.conserved_params_to_use+self.converted_params_to_use):
+                toexport_df_dict[param_name+"_resid"] =\
+                    self.param_residuals[:,param_idx] 
 
-        if (self.total_oxygen_deficit is not None):
-            toexport_df_dict["total oxygen deficit"] = self.total_oxygen_deficit
+        endmembernames=list(self.endmember_df[self.endmember_name_column])
+        if (export_endmember_fracs):
+            for endmember_idx in range(len(endmembernames)):
+                toexport_df_dict[endmembernames[endmember_idx]] =\
+                    self.endmember_fractions[:,endmember_idx]
 
+        if (export_oxygen_deficit and
+            (self.total_oxygen_deficit is not None)):
+            toexport_df_dict["total_oxygen_deficit"] = self.total_oxygen_deficit
+
+        if (export_conversion_ratios and
+            (self.total_oxygen_deficit is not None)): 
             for converted_param_idx in range(len(self.converted_params_to_use)):
-                toexport_df_dict["oxygen to"+
-                         self.converted_params_to_use[converted_param_idx]
-                         +" ratio"] =\
+                param_name = self.converted_params_to_use[converted_param_idx]
+                toexport_df_dict["oxygen_to_"+param_name+"_ratio"] =\
                     1.0/self.effective_conversion_ratios[:,converted_param_idx]
+
+        if (export_endmember_usage_penalties):
+            for endmembername in endmembernames:
+                if (endmembername in\
+                    self.ompa_problem.endmembername_to_usagepenalty): 
+                    endmember_usagepenalty = (self.ompa_problem.
+                                  endmembername_to_usagepenalty[endmembername])
+                    toexport_df_dict[endmembername] = endmember_usagepenalty
         
         toexport_df = pd.DataFrame(toexport_df_dict)
         toexport_df.to_csv(csv_output_name, index=False, **kwargs)
@@ -121,7 +150,7 @@ class OMPAProblem(object):
             list(self.conversionratios.values())[0])
 
     def prep_endmember_usagepenalties(self):
-        self.endmembername_to_usagepenalty = {}
+        self.endmembername_to_usagepenalty = OrderedDict()
         for endmembername, penalty_func in\
          self.endmembername_to_usagepenaltyfunc.items():
             print("Adding penalty for",endmembername)

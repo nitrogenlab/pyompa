@@ -78,9 +78,7 @@ def parse_params(config):
             conversionratios)
 
 
-def find_ompa_solution_given_toml_file(toml_config_file, xaxis_colname,
-                                       yaxis_colname, flip_y=True):
-    config = toml.loads(open(toml_config_file).read())
+def run_ompa_given_config(config):
     assert_compatible_keys(the_dict=config,
           allowed=["observations", "params", "endmembers",
                    "endmember_penalties"],
@@ -123,5 +121,8 @@ def find_ompa_solution_given_toml_file(toml_config_file, xaxis_colname,
     ompa_soln = ompa_problem.solve(
               endmember_df=endmember_df,
               endmember_name_column="endmember_name") 
+
+    if "export" in config:
+        ompa_soln.export_to_csv(**config["export"])
 
     return ompa_soln
