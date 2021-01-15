@@ -300,18 +300,17 @@ class OMPAProblem(object):
                               +" oxygen deficits:", oxygen_deficit)
             total_oxygen_deficit = np.sum(oxygen_deficits, axis=-1)
             #proportions of oxygen use at differnet ratios
-            #add a small pseudocount to avoid division by zero at low values
-            oxygen_usage_proportions = (
-                np.maximum(oxygen_deficits,1e-7)/
-                np.maximum(total_oxygen_deficit[:,None], 1e-7))
-            #Reminder: conversion_ratios has dims of
-            # num_conversion_ratios x num_converted_params
-            #oxygen_usage_proportions has dims of
-            # num_examples X num_conversion_ratios
-            #Note: should disregard conversion ratios computed when oxygen
-            # usage is very small.
-            effective_conversion_ratios = (
-                oxygen_usage_proportions@conversion_ratios)         
+            with np.errstate(divide='ignore'):
+                oxygen_usage_proportions = (
+                    oxygen_deficits/total_oxygen_deficit[:,None])
+                #Reminder: conversion_ratios has dims of
+                # num_conversion_ratios x num_converted_params
+                #oxygen_usage_proportions has dims of
+                # num_examples X num_conversion_ratios
+                #Note: should disregard conversion ratios computed when oxygen
+                # usage is very small.
+                effective_conversion_ratios = (
+                    oxygen_usage_proportions@conversion_ratios)         
         else:
             total_oxygen_deficit = None
             effective_conversion_ratios = None
@@ -327,75 +326,6 @@ class OMPAProblem(object):
                   param_residuals=param_residuals,
                   total_oxygen_deficit=total_oxygen_deficit,
                   effective_conversion_ratios=effective_conversion_ratios)
-
-    def construct_ideal_endmembers(self, ompa_soln):
-
-        print("Constructing ideal end members")
-
-        b = self.get_b() # dims of num_obs X params
-
-        if (ompa_soln.oxygen_deficits is not None):
-            #self.oxygen_deficits has dims of num_obs X num_conversion_ratios
-            #conversion_ratio_rows has dims of num_conversion_ratios X params
-            conversion_ratios, conversion_ratio_rows =\
-                self.get_conversion_ratio_rows_of_A()
-            deltas_due_to_oxygen_deficits = ( #<- num_obs X params
-             ompa_soln.oxygen_deficits@conversion_ratio_rows) 
-            b = b - deltas_due_to_oxygen_deficits
-
-        #Do a sanity check to make sure that, with the existing end member
-        # matrix, we end up recapitulating the residuals
-        #existing_endmemmat has dims of num_endmembers X params
-        existing_endmemmat = self.get_endmem_mat(ompa_soln.endmember_df)
-        #self.endmember_fractions has dims of num_obs X num_endmembers
-        #Note: b and existing_endmemmat haven't been scaled by weighting yet,
-        # so there is no need
-        # to un-scale it here. Also note deltas_due_to_oxygen_deficits has
-        # already been subtracted
-        old_param_residuals = (b
-          - ompa_soln.endmember_fractions@existing_endmemmat)
-        np.testing.assert_almost_equal(old_param_residuals,
-                                       ompa_soln.param_residuals, decimal=5)
-
-        #Now solve for a better end-member mat
-        weighting = self.get_param_weighting()
-        new_endmemmat_var =  cp.Variable(shape=existing_endmemmat.shape)  
-        
-        #keeping the endmember_fractions, what are the best end members?
-        obj = cp.Minimize(
-            cp.sum_squares(ompa_soln.endmember_fractions@new_endmemmat_var
-                           - b*weighting[None,:]))
-        constraints = [] #no constraints for now
-        prob = cp.Problem(obj, constraints)
-        prob.solve(verbose=False, max_iter=50000)
-        
-        print("status:", prob.status)
-        print("optimal value", prob.value)
-
-        if (prob.status=="infeasible"):
-            raise RuntimeError("Something went wrong "
-                               +"- the optimization failed")
-        else:
-            new_endmemmat = new_endmemmat_var.value/weighting[None,:]
-            #Sanity check that the residuals got better
-            new_param_residuals = (b
-                - ompa_soln.endmember_fractions@new_endmemmat)
-            new_param_resid_wsumsq =\
-                np.sum(np.square(new_param_residuals*weighting[None,:]))
-            old_param_resid_wsumsq =\
-                np.sum(np.square(old_param_residuals*weighting[None,:]))
-            print("Old weighted residuals sumsquared:",old_param_resid_wsumsq)
-            print("New weighted residuals sumsquared:",new_param_resid_wsumsq)
-            assert new_param_resid_wsumsq <= old_param_resid_wsumsq
-
-            #make a endmember data frame
-            new_endmemmat_df = pd.DataFrame(OrderedDict(
-             [(ompa_soln.endmember_name_column,
-               list(ompa_soln.endmember_df[ompa_soln.endmember_name_column]))]
-             +[(paramname, values) for paramname,values in
-             zip(self.conserved_params_to_use+self.converted_params_to_use,
-                 new_endmemmat.T) ])) 
-            return new_endmemmat_df
 
     def core_solve(self, A, b, num_conversion_ratios, num_converted_params,
                    pairs_matrix, endmember_usagepenalty,
@@ -499,6 +429,75 @@ class OMPAProblem(object):
         
         return (fixed_x, endmember_fractions, oxygen_deficits,
                 perobs_weighted_resid_sq, prob)
+
+    def construct_ideal_endmembers(self, ompa_soln):
+
+        print("Constructing ideal end members")
+
+        b = self.get_b() # dims of num_obs X params
+
+        if (ompa_soln.oxygen_deficits is not None):
+            #self.oxygen_deficits has dims of num_obs X num_conversion_ratios
+            #conversion_ratio_rows has dims of num_conversion_ratios X params
+            conversion_ratios, conversion_ratio_rows =\
+                self.get_conversion_ratio_rows_of_A()
+            deltas_due_to_oxygen_deficits = ( #<- num_obs X params
+             ompa_soln.oxygen_deficits@conversion_ratio_rows) 
+            b = b - deltas_due_to_oxygen_deficits
+
+        #Do a sanity check to make sure that, with the existing end member
+        # matrix, we end up recapitulating the residuals
+        #existing_endmemmat has dims of num_endmembers X params
+        existing_endmemmat = self.get_endmem_mat(ompa_soln.endmember_df)
+        #self.endmember_fractions has dims of num_obs X num_endmembers
+        #Note: b and existing_endmemmat haven't been scaled by weighting yet,
+        # so there is no need
+        # to un-scale it here. Also note deltas_due_to_oxygen_deficits has
+        # already been subtracted
+        old_param_residuals = (b
+          - ompa_soln.endmember_fractions@existing_endmemmat)
+        np.testing.assert_almost_equal(old_param_residuals,
+                                       ompa_soln.param_residuals, decimal=5)
+
+        #Now solve for a better end-member mat
+        weighting = self.get_param_weighting()
+        new_endmemmat_var =  cp.Variable(shape=existing_endmemmat.shape)  
+        
+        #keeping the endmember_fractions, what are the best end members?
+        obj = cp.Minimize(
+            cp.sum_squares(ompa_soln.endmember_fractions@new_endmemmat_var
+                           - b*weighting[None,:]))
+        constraints = [] #no constraints for now
+        prob = cp.Problem(obj, constraints)
+        prob.solve(verbose=False, max_iter=50000)
+        
+        print("status:", prob.status)
+        print("optimal value", prob.value)
+
+        if (prob.status=="infeasible"):
+            raise RuntimeError("Something went wrong "
+                               +"- the optimization failed")
+        else:
+            new_endmemmat = new_endmemmat_var.value/weighting[None,:]
+            #Sanity check that the residuals got better
+            new_param_residuals = (b
+                - ompa_soln.endmember_fractions@new_endmemmat)
+            new_param_resid_wsumsq =\
+                np.sum(np.square(new_param_residuals*weighting[None,:]))
+            old_param_resid_wsumsq =\
+                np.sum(np.square(old_param_residuals*weighting[None,:]))
+            print("Old weighted residuals sumsquared:",old_param_resid_wsumsq)
+            print("New weighted residuals sumsquared:",new_param_resid_wsumsq)
+            assert new_param_resid_wsumsq <= old_param_resid_wsumsq
+
+            #make a endmember data frame
+            new_endmemmat_df = pd.DataFrame(OrderedDict(
+             [(ompa_soln.endmember_name_column,
+               list(ompa_soln.endmember_df[ompa_soln.endmember_name_column]))]
+             +[(paramname, values) for paramname,values in
+             zip(self.conserved_params_to_use+self.converted_params_to_use,
+                 new_endmemmat.T) ])) 
+            return new_endmemmat_df
 
     def iteratively_refine_ompa_solns(self, init_endmember_df,
             endmember_name_column, num_iterations):
