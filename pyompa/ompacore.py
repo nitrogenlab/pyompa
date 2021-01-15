@@ -417,20 +417,45 @@ class OMPAProblem(object):
             endmember_fractions = x.value[:,:num_endmembers]
             ##enforce the constraints (nonnegativity, sum to 1) on
             ## endmember_fractions
-            #endmember_fractions = np.maximum(endmember_fractions, 0) 
-            #endmember_fractions = (endmember_fractions/
-            #    np.sum(endmember_fractions,axis=-1)[:,None])
+            endmember_fractions = np.maximum(endmember_fractions, 0) 
+            endmember_fractions = (endmember_fractions/
+                np.sum(endmember_fractions,axis=-1)[:,None])
+
             if (num_converted_params > 0):
                 oxygen_deficits = x.value[:,num_endmembers:]
+                if (hasattr(conversion_sign_constraints, '__len__')):
+                    gt_zero_mask = conversion_sign_constraints > 0
+                    oxygen_deficits[gt_zero_mask] = np.maximum(
+                        oxygen_deficits[gt_zero_mask], 0.0) 
+                    lt_zero_mask = conversion_sign_constraints < 0
+                    oxygen_deficits[lt_zero_mask] = np.minimum(
+                        oxygen_deficits[lt_zero_mask], 0.0) 
+                else:
+                    if (conversion_sign_constraints > 0):
+                        oxygen_deficits = np.maximum(oxygen_deficits, 0.0)
+                    elif (conversion_sign_constraints < 0):
+                        oxygen_deficits = np.minimum(oxygen_deficits, 0.0)
+                    else:
+                        assert False, conversion_sign_constraints
+                #fixed_x is x that is forced to satisfy the constraints
+                fixed_x = np.concatenate(
+                            [endmember_fractions, oxygen_deficits], axis=-1)
             else:
-               oxygen_deficits = None
+                oxygen_deficits = None
+                fixed_x = endmember_fractions
+
+            afterfixing_resid_wsumsq = np.sum(np.square(fixed_x@A - b))
+            print("Original weighted sum squares:",original_resid_wsumsq)
+            print("Weighted sum squares after forcing constraints "
+                  +"(even within numerical precision): "
+                  +str(afterfixing_resid_wsumsq))
 
             perobs_weighted_resid_sq =\
-                np.sum(np.square((x.value@A) - b), axis=-1)
+                np.sum(np.square((fixed_x@A) - b), axis=-1)
             #TODO: enforce that the constraints are satisfied, and
             #recompute residuals accordingly.
         
-        return (x.value, endmember_fractions, oxygen_deficits,
+        return (fixed_x, endmember_fractions, oxygen_deficits,
                 perobs_weighted_resid_sq, prob)
 
     def iteratively_refine_ompa_solns(self, init_endmember_df,
