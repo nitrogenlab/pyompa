@@ -444,11 +444,10 @@ class OMPAProblem(object):
                 oxygen_deficits = None
                 fixed_x = endmember_fractions
 
+            print(fixed_x.shape, A.shape, b.shape)
             afterfixing_resid_wsumsq = np.sum(np.square(fixed_x@A - b))
             print("Original weighted sum squares:",original_resid_wsumsq)
-            print("Weighted sum squares after forcing constraints "
-                  +"(even within numerical precision): "
-                  +str(afterfixing_resid_wsumsq))
+            print("Post fix weighted sum squared:",afterfixing_resid_wsumsq)
 
             perobs_weighted_resid_sq =\
                 np.sum(np.square((fixed_x@A) - b), axis=-1)
