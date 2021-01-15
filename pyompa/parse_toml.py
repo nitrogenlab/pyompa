@@ -90,7 +90,7 @@ def find_ompa_solution_given_toml_file(toml_config_file):
     obs_df = parse_observations_config(config=config["observations"]) 
 
     (endmember_df, endmember_name_column) = (
-        parse_observations_config(config=config["endmembers"]))
+        parse_endmembers_config(config=config["endmembers"]))
 
     (paramsandweighting_conserved, paramsandweighting_converted,
      conversionratios) = parse_params(config=config["params"])
