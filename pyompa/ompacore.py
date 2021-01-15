@@ -92,7 +92,6 @@ class OMPAProblem(object):
         # specified in convertedparams_ratios
         
         #paramsandweighting_conserved is a list of tuples; split them up
-        print(self.paramsandweighting_converted)
         self.conserved_params_to_use, self.conserved_weighting = [
           list(x) for x in zip(*self.paramsandweighting_conserved)]
         if (len(self.paramsandweighting_converted) > 0):
@@ -181,7 +180,6 @@ class OMPAProblem(object):
         #Prepare A
         conversion_ratios, conversion_ratio_rows =\
             self.get_conversion_ratio_rows_of_A()
-        print("Conversion ratios:\n"+str(conversion_ratios))
         #add a row to A for the ratios
         A = np.concatenate([self.get_endmem_mat(endmember_df),
                             conversion_ratio_rows], axis=0)
@@ -193,7 +191,7 @@ class OMPAProblem(object):
         print("params to use:", self.conserved_params_to_use,
                                 self.converted_params_to_use)        
         print("param weighting:", weighting)
-        print("ratio", conversion_ratios)
+        print("Conversion ratios:\n"+str(conversion_ratios))
         A = A*weighting[None,:]
         b = b*weighting[None,:]
 

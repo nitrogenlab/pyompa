@@ -77,7 +77,8 @@ def parse_params(config):
             conversionratios)
 
 
-def find_ompa_solution_given_toml_file(toml_config_file):
+def find_ompa_solution_given_toml_file(toml_config_file, xaxis_colname,
+                                       yaxis_colname, flip_y=True):
     config = toml.loads(open(toml_config_file).read())
     assert_compatible_keys(the_dict=config,
           allowed=["observations", "params", "endmembers",
@@ -102,14 +103,23 @@ def find_ompa_solution_given_toml_file(toml_config_file):
     else:
         endmembername_to_usagepenaltyfunc = {}
 
-    ompa_soln = OMPAProblem(
+    ompa_problem = OMPAProblem(
           obs_df = obs_df,
           paramsandweighting_conserved=paramsandweighting_conserved,
           paramsandweighting_converted=paramsandweighting_converted,
           conversionratios=conversionratios,
           smoothness_lambda=None,
           endmembername_to_usagepenaltyfunc=
-            endmembername_to_usagepenaltyfunc).solve(
+            endmembername_to_usagepenaltyfunc)
+
+    if (len(endmembername_to_usagepenaltyfunc) > 0):
+        print("endmember usage penalties:")
+        plot_ompaproblem_endmember_usagepenalties(
+            ompa_problem=ompa_problem,
+            xaxis_colname=xaxis_colname, yaxis_colname=yaxis_colname,
+            flip_y=flip_y)
+
+    ompa_soln = ompa_problem.solve(
               endmember_df=endmember_df,
               endmember_name_column="endmember_name") 
 
