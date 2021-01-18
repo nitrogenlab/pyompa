@@ -102,3 +102,6 @@ export_oxygen_deficit=true
 export_conversion_ratios=true
 export_endmember_usage_penalties=true
 ```
+
+## Running from a colab notebook/in python
+For more advanced users. See https://colab.research.google.com/github/nitrogenlab/GP15_watermassanalysis/blob/5dc1fc3d484d8153f5351980e55a05d84fe2cddf/config_files_demo.ipynb for an example.
