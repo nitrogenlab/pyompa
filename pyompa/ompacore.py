@@ -26,6 +26,8 @@ class OMPASoln(object):
         self.obs_df = ompa_problem.obs_df
         self.conserved_params_to_use = ompa_problem.conserved_params_to_use
         self.converted_params_to_use = ompa_problem.converted_params_to_use   
+        self.endmembername_to_usagepenalty =\
+            ompa_problem.endmembername_to_usagepenalty
         self.__dict__.update(kwargs)
 
     def export_to_csv(self, csv_output_name,
