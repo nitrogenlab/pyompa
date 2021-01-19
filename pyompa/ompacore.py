@@ -46,6 +46,11 @@ class OMPASoln(object):
              self.conserved_params_to_use+self.converted_params_to_use)
 
         for orig_col in orig_cols_to_include:
+            assert orig_col in self.obs_df, (
+             "Export settings asked that "+orig_col+" be copied from the"
+             +" original observations data frame into the output, but"
+             +" no such column header was present in the observations data"
+             +" frame; the column headers are: "+str(self.obs_df.columns)) 
             toexport_df_dict[orig_col] = self.obs_df[orig_col]
 
         if (export_residuals):
@@ -57,7 +62,7 @@ class OMPASoln(object):
         endmembernames=list(self.endmember_df[self.endmember_name_column])
         if (export_endmember_fracs):
             for endmember_idx in range(len(endmembernames)):
-                toexport_df_dict[endmembernames[endmember_idx]] =\
+                toexport_df_dict[endmembernames[endmember_idx]+"_frac"] =\
                     self.endmember_fractions[:,endmember_idx]
 
         if (export_oxygen_deficit and
@@ -77,7 +82,8 @@ class OMPASoln(object):
                     self.ompa_problem.endmembername_to_usagepenalty): 
                     endmember_usagepenalty = (self.ompa_problem.
                                   endmembername_to_usagepenalty[endmembername])
-                    toexport_df_dict[endmembername] = endmember_usagepenalty
+                    toexport_df_dict[endmembername+"_penalty"] =\
+                        endmember_usagepenalty
         
         toexport_df = pd.DataFrame(toexport_df_dict)
         toexport_df.to_csv(csv_output_name, index=False)

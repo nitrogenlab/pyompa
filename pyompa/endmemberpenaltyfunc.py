@@ -23,10 +23,18 @@ def get_default_latlon_exp_penalty_func(alpha=0.05, beta=100, **kwargs):
             alpha=alpha, beta=beta, **kwargs) 
 
 
+#Returns a penalty function that takes an observations data frame as input
+# and outputs the total endmember usage penalty on each observation.
+#colname_to_penaltyfunc is a mapping from a column in the observations data
+# frame to the penalty function associated with that column
 def get_combined_penalty_func(colname_to_penaltyfunc):
     def penalty_func(df):
         total_penalty = None
         for colname, penaltyfunc in colname_to_penaltyfunc.items():
+            assert colname in df, ("An endmember penalty function specified "
+               +str(colname)+" as a column, but no such column is present in"
+               +" the observations data frame; the available column headers"
+               +" in the observations data frame are "+str(df.columns))
             values = np.array(df[colname])
             penalty = penaltyfunc(values) 
             if (total_penalty is None):
