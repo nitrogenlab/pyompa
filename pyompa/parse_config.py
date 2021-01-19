@@ -5,7 +5,6 @@ from .ompacore import OMPAProblem
 from .endmemberpenaltyfunc import EndMemExpPenaltyFunc 
 from .util import assert_in, assert_compatible_keys, assert_has_keys
 from collections import OrderedDict
-from .plotting import plot_ompaproblem_endmember_usagepenalties
 import json
 
 
@@ -117,13 +116,6 @@ def run_ompa_given_config(config):
           smoothness_lambda=None,
           endmembername_to_usagepenaltyfunc=
             endmembername_to_usagepenaltyfunc)
-
-    #if (len(endmembername_to_usagepenaltyfunc) > 0):
-    #    print("endmember usage penalties:")
-    #    plot_ompaproblem_endmember_usagepenalties(
-    #        ompa_problem=ompa_problem,
-    #        xaxis_colname=xaxis_colname, yaxis_colname=yaxis_colname,
-    #        flip_y=flip_y)
 
     ompa_soln = ompa_problem.solve(
               endmember_df=endmember_df,
