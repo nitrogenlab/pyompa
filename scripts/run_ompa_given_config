@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+import argparse
+import toml
+from pyompa.parse_config import run_ompa_given_toml_config_file
+
+
+def main(args):
+    run_ompa_given_toml_config_file(args.config_file)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("config_file", help="Configuration file")
+    main(parser.parse_args())
+    

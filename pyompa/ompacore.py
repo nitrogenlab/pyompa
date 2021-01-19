@@ -9,19 +9,85 @@ from collections import OrderedDict
 
 class OMPASoln(object):
 
-    def __init__(self, endmember_df, ompa_problem, **kwargs):
+    def __init__(self, endmember_df, endmember_name_column,
+                       ompa_problem,
+                       endmember_fractions,
+                       total_oxygen_deficit,
+                       param_residuals,
+                       effective_conversion_ratios,
+                       **kwargs):
         self.endmember_df = endmember_df
+        self.endmember_name_column = endmember_name_column
         self.ompa_problem = ompa_problem
+        self.endmember_fractions = endmember_fractions
+        self.total_oxygen_deficit = total_oxygen_deficit
+        self.param_residuals = param_residuals
+        self.effective_conversion_ratios = effective_conversion_ratios
         self.obs_df = ompa_problem.obs_df
         self.conserved_params_to_use = ompa_problem.conserved_params_to_use
         self.converted_params_to_use = ompa_problem.converted_params_to_use   
         self.__dict__.update(kwargs)
+
+    def export_to_csv(self, csv_output_name,
+                            orig_cols_to_include=[],
+                            export_orig_param_vals=True,
+                            export_residuals=True,
+                            export_endmember_fracs=True,
+                            export_oxygen_deficit=True,
+                            export_conversion_ratios=True,
+                            export_endmember_usage_penalties=False):
+
+        print("writing to",csv_output_name)
+
+        toexport_df_dict = OrderedDict()
+
+        if (export_orig_param_vals):
+            orig_cols_to_include += (
+             self.conserved_params_to_use+self.converted_params_to_use)
+
+        for orig_col in orig_cols_to_include:
+            toexport_df_dict[orig_col] = self.obs_df[orig_col]
+
+        if (export_residuals):
+             for param_idx,param_name in enumerate(
+                self.conserved_params_to_use+self.converted_params_to_use):
+                toexport_df_dict[param_name+"_resid"] =\
+                    self.param_residuals[:,param_idx] 
+
+        endmembernames=list(self.endmember_df[self.endmember_name_column])
+        if (export_endmember_fracs):
+            for endmember_idx in range(len(endmembernames)):
+                toexport_df_dict[endmembernames[endmember_idx]] =\
+                    self.endmember_fractions[:,endmember_idx]
+
+        if (export_oxygen_deficit and
+            (self.total_oxygen_deficit is not None)):
+            toexport_df_dict["total_oxygen_deficit"] = self.total_oxygen_deficit
+
+        if (export_conversion_ratios and
+            (self.total_oxygen_deficit is not None)): 
+            for converted_param_idx in range(len(self.converted_params_to_use)):
+                param_name = self.converted_params_to_use[converted_param_idx]
+                toexport_df_dict["oxygen_to_"+param_name+"_ratio"] =\
+                    1.0/self.effective_conversion_ratios[:,converted_param_idx]
+
+        if (export_endmember_usage_penalties):
+            for endmembername in endmembernames:
+                if (endmembername in\
+                    self.ompa_problem.endmembername_to_usagepenalty): 
+                    endmember_usagepenalty = (self.ompa_problem.
+                                  endmembername_to_usagepenalty[endmembername])
+                    toexport_df_dict[endmembername] = endmember_usagepenalty
+        
+        toexport_df = pd.DataFrame(toexport_df_dict)
+        toexport_df.to_csv(csv_output_name, index=False)
 
     def iteratively_refine_ompa_soln(self, num_iterations):
         init_endmember_df = self.ompa_problem.construct_ideal_endmembers(
             ompa_soln=self)
         ompa_solns = self.ompa_problem.iteratively_refine_ompa_solns(
             init_endmember_df=init_endmember_df,
+            endmember_name_column=self.endmember_name_column,
             num_iterations=num_iterations)
         return [self]+ompa_solns
 
@@ -35,22 +101,28 @@ class OMPAProblem(object):
                        paramsandweighting_converted,
                        conversionratios,
                        smoothness_lambda,
-                       watermassname_to_usagepenaltyfunc):
+                       endmembername_to_usagepenaltyfunc):
         self.obs_df = obs_df
         self.paramsandweighting_conserved = paramsandweighting_conserved
         self.paramsandweighting_converted = paramsandweighting_converted
         self.conversionratios = conversionratios
         self.smoothness_lambda = smoothness_lambda
-        self.watermassname_to_usagepenaltyfunc =\
-          watermassname_to_usagepenaltyfunc
+        self.endmembername_to_usagepenaltyfunc =\
+          endmembername_to_usagepenaltyfunc
         self.process_params()
+        self.prep_endmember_usagepenalties() 
+
+    @classmethod
+    def from_toml_string(cls, toml_string):
+        parsed_toml = toml.loads(toml_string) 
+        observations_df_config = parsed_toml["observations_config"] 
+        
 
     def process_params(self):
         #check that every param in self.paramsandweighting_converted is
         # specified in convertedparams_ratios
         
         #paramsandweighting_conserved is a list of tuples; split them up
-        print(self.paramsandweighting_converted)
         self.conserved_params_to_use, self.conserved_weighting = [
           list(x) for x in zip(*self.paramsandweighting_conserved)]
         if (len(self.paramsandweighting_converted) > 0):
@@ -58,6 +130,13 @@ class OMPAProblem(object):
               list(x) for x in zip(*self.paramsandweighting_converted)]
         else:
             self.converted_params_to_use, self.converted_weighting = [], []
+
+        for param_name in (self.conserved_params_to_use
+                           +self.converted_params_to_use):
+            assert param_name in self.obs_df,\
+                (param_name+" not specified in observations data frame;"
+                 +" observations data frame columns are "
+                 +str(list(self.obs_df.columns)))
 
         if (max(self.converted_weighting+self.conserved_weighting) > 100):
             print("Warning: having very large param weights can lead to"
@@ -68,29 +147,38 @@ class OMPAProblem(object):
         # convertedparams_ratios:
         assert all([(x in self.conversionratios)
                      for x in self.converted_params_to_use])
-        #also assert that every entry in convertedratios has the same length
-        assert len(set([len(x) for x in self.conversionratios.values()])) == 1
-        self.num_conversion_ratios = len(
-            list(self.conversionratios.values())[0])
+        if (len(self.converted_params_to_use) > 0):
+            #also assert that every entry in convertedratios has the same length
+            assert len(set([len(x) for x in 
+                       self.conversionratios.values()])) == 1, conversionratios
+            self.num_conversion_ratios = len(
+                list(self.conversionratios.values())[0])
+        else:
+            self.num_conversion_ratios = 0
 
-    def prep_watermass_usagepenalty_mat(self, watermassnames):
-        obs_df = self.obs_df
-        watermass_usagepenalty = np.zeros((len(obs_df),
-                                           len(watermassnames)))
-        for watermassidx,watermassname in enumerate(watermassnames):
-            if watermassname in self.watermassname_to_usagepenaltyfunc:
-                lat = np.array(obs_df["latitude"])
-                sig0 = np.array(obs_df["sig0"])
-                penalty = self.watermassname_to_usagepenaltyfunc[watermassname](
-                    lat=lat, sig0=sig0)
-                watermass_usagepenalty[:,watermassidx] = penalty
-                #Plotting
-                from matplotlib import pyplot as plt
-                print("Adding penalty for",watermassname)
-                plt.scatter(lat, -np.array(obs_df["depth"]), c=penalty)
-                plt.colorbar()
-                plt.show()
-        return watermass_usagepenalty
+    def prep_endmember_usagepenalties(self):
+        self.endmembername_to_usagepenalty = OrderedDict()
+        for endmembername, penalty_func in\
+         self.endmembername_to_usagepenaltyfunc.items():
+            print("Adding penalty for",endmembername)
+            penalty = penalty_func(self.obs_df)
+            self.endmembername_to_usagepenalty[endmembername] = penalty
+
+    def prep_endmember_usagepenalty_mat(self, endmember_names):
+        endmember_usagepenalty = np.zeros((len(self.obs_df),
+                                           len(endmember_names)))
+        for endmemberidx,endmembername in enumerate(endmember_names):
+            if endmembername in self.endmembername_to_usagepenalty:
+                endmember_usagepenalty[:,endmemberidx] =\
+                    self.endmembername_to_usagepenalty[endmembername]
+        #print a warning if specified a usage penalty that was not used
+        for endmembername in self.endmembername_to_usagepenalty:
+            if endmembername not in endmember_names:
+                print("WARNING!!! You specified a usage penalty for "
+                 +str(endmembername)+" but that endmember did not appear "
+                 +"in the endmember data frame")
+                 
+        return endmember_usagepenalty
 
     def get_b(self):
         b = np.array(self.obs_df[self.conserved_params_to_use
@@ -115,24 +203,32 @@ class OMPAProblem(object):
         return np.array(endmember_df[self.conserved_params_to_use
                                      +self.converted_params_to_use])
 
-    def solve(self, endmember_df):
+    def solve(self, endmember_df, endmember_name_column):
 
-        watermassnames = list(endmember_df["watermassname"])
+        for param_name in (self.conserved_params_to_use
+                           +self.converted_params_to_use):
+            assert param_name in endmember_df,\
+                (param_name+" not specified in endmemebr_df where columns are "
+                 +str(list(endmember_df.columns)))
+
+        endmember_names = list(endmember_df[endmember_name_column])
 
         weighting = self.get_param_weighting() 
         smoothness_lambda = self.smoothness_lambda
 
-        watermass_usagepenalty =\
-            self.prep_watermass_usagepenalty_mat(watermassnames)
-        self.watermass_usagepenalty = watermass_usagepenalty
+        endmember_usagepenalty =\
+            self.prep_endmember_usagepenalty_mat(endmember_names)
+        self.endmember_usagepenalty = endmember_usagepenalty
 
         #Prepare A
         conversion_ratios, conversion_ratio_rows =\
             self.get_conversion_ratio_rows_of_A()
-        print("Conversion ratios:\n"+str(conversion_ratios))
         #add a row to A for the ratios
-        A = np.concatenate([self.get_endmem_mat(endmember_df),
-                            conversion_ratio_rows], axis=0)
+        if (len(conversion_ratio_rows > 0)):
+            A = np.concatenate([self.get_endmem_mat(endmember_df),
+                                conversion_ratio_rows], axis=0)
+        else:
+            A = self.get_endmem_mat(endmember_df)
 
         #prepare b
         b = self.get_b()
@@ -141,7 +237,7 @@ class OMPAProblem(object):
         print("params to use:", self.conserved_params_to_use,
                                 self.converted_params_to_use)        
         print("param weighting:", weighting)
-        print("ratio", conversion_ratios)
+        print("Conversion ratios:\n"+str(conversion_ratios))
         A = A*weighting[None,:]
         b = b*weighting[None,:]
 
@@ -161,7 +257,7 @@ class OMPAProblem(object):
             num_conversion_ratios=self.num_conversion_ratios,
             num_converted_params=len(self.converted_params_to_use),
             pairs_matrix=None,
-            watermass_usagepenalty=watermass_usagepenalty,
+            endmember_usagepenalty=endmember_usagepenalty,
             conversion_sign_constraints=1,
             smoothness_lambda=None)
         _, _, _, perobs_weighted_resid_sq_negativeconversionsign, _ =\
@@ -170,7 +266,7 @@ class OMPAProblem(object):
             num_conversion_ratios=self.num_conversion_ratios,
             num_converted_params=len(self.converted_params_to_use),
             pairs_matrix=None,
-            watermass_usagepenalty=watermass_usagepenalty,
+            endmember_usagepenalty=endmember_usagepenalty,
             conversion_sign_constraints=-1,
             smoothness_lambda=None)
         
@@ -182,18 +278,18 @@ class OMPAProblem(object):
             1.0*positive_conversionsign_isbetter
             + -1.0*(positive_conversionsign_isbetter==False))
         
-        (x, water_mass_fractions,
+        (x, endmember_fractions,
          oxygen_deficits,
          perobs_weighted_resid_sq, prob) = self.core_solve(
             A=A, b=b,
             num_conversion_ratios=self.num_conversion_ratios,
             num_converted_params=len(self.converted_params_to_use),
             pairs_matrix=pairs_matrix,
-            watermass_usagepenalty=watermass_usagepenalty,
+            endmember_usagepenalty=endmember_usagepenalty,
             conversion_sign_constraints=final_conversion_signconstraints,
             smoothness_lambda=smoothness_lambda)
         
-        if (water_mass_fractions is not None):
+        if (endmember_fractions is not None):
             print("objective:", np.sum(perobs_weighted_resid_sq))
             param_reconstruction = (x@A)/weighting[None,:]
             param_residuals = b/weighting[None,:] - param_reconstruction
@@ -206,34 +302,141 @@ class OMPAProblem(object):
             # precision
             for oxygen_deficit in oxygen_deficits:
                 if (len(oxygen_deficit) > 0):
-                    if ((all(oxygen_deficit > -1e-5) or
-                         all(oxygen_deficit < 1e-5))==False):
-                        print("WARNING: potential sign inconsistency in"
+                    if ((all(oxygen_deficit >= 0) or
+                         all(oxygen_deficit <= 0))==False):
+                        print("WARNING: sign inconsistency in"
                               +" oxygen deficits:", oxygen_deficit)
             total_oxygen_deficit = np.sum(oxygen_deficits, axis=-1)
             #proportions of oxygen use at differnet ratios
-            oxygen_usage_proportions = (oxygen_deficits/
-                                        total_oxygen_deficit[:,None])
-            #Reminder: conversion_ratios has dims of
-            # num_conversion_ratios x num_converted_params
-            #oxygen_usage_proportions has dims of
-            # num_examples X num_conversion_ratios
-            effective_conversion_ratios = (
-                oxygen_usage_proportions@conversion_ratios)         
+            with np.errstate(divide='ignore', invalid='ignore'):
+                oxygen_usage_proportions = (
+                    oxygen_deficits/total_oxygen_deficit[:,None])
+                #Reminder: conversion_ratios has dims of
+                # num_conversion_ratios x num_converted_params
+                #oxygen_usage_proportions has dims of
+                # num_examples X num_conversion_ratios
+                #Note: should disregard conversion ratios computed when oxygen
+                # usage is very small.
+                effective_conversion_ratios = (
+                    oxygen_usage_proportions@conversion_ratios)         
         else:
             total_oxygen_deficit = None
             effective_conversion_ratios = None
 
         return OMPASoln(endmember_df=endmember_df,
                   ompa_problem=self,
-                  watermassnames=watermassnames,
+                  endmember_names=endmember_names,
+                  endmember_name_column=endmember_name_column,
                   status=prob.status,
-                  water_mass_fractions=water_mass_fractions,
+                  endmember_fractions=endmember_fractions,
                   oxygen_deficits=oxygen_deficits,
                   resid_wsumsq=np.sum(perobs_weighted_resid_sq),
                   param_residuals=param_residuals,
                   total_oxygen_deficit=total_oxygen_deficit,
                   effective_conversion_ratios=effective_conversion_ratios)
+
+    def core_solve(self, A, b, num_conversion_ratios, num_converted_params,
+                   pairs_matrix, endmember_usagepenalty,
+                   conversion_sign_constraints, smoothness_lambda,
+                   verbose=True):
+  
+        #We are going to solve the following problem:
+        #P is the penalty matrix. It has dimensions of
+        #  (observations X end_members)
+        #Minimize (x@A - b)^2 + (x[:,:-num_conversion_ratios]*P)^2
+        #Subject to x[:,:-num_conversion_ratios] >= 0,
+        #           cp.sum(x[:,:-num_conversion_ratios], axis=1) == 1
+        # x has dimensions of observations X (end_members+num_conversion_ratios)
+        # the +1 row represents O2 deficit, for remineralization purposes
+        # A has dimensions of (end_members+num_conversion_ratios) X parameteres
+        # b has dimensions of observations X parameters 
+        
+        num_endmembers = len(A)-num_conversion_ratios
+        x = cp.Variable(shape=(len(b), len(A)))
+        obj = (cp.sum_squares(x@A - b) +
+                cp.sum_squares(cp.atoms.affine.binary_operators.multiply(
+                                    x[:,:num_endmembers],
+                                    endmember_usagepenalty) ))
+        if (smoothness_lambda is not None):
+            #leave out O2 deficit column from the smoothness penality as it's
+            # on a bit of a different scale.
+            obj += smoothness_lambda*cp.sum_squares(
+                    pairs_matrix@x[:,:num_endmembers])
+        obj = cp.Minimize(obj)
+        
+        #leave out the last column as it's the conversion ratio
+        constraints = [
+           x[:,:num_endmembers] >= 0,
+           cp.sum(x[:,:num_endmembers],axis=1)==1]
+        if (num_conversion_ratios > 0):
+            if (hasattr(conversion_sign_constraints, '__len__')==False):
+                constraints.append(
+                  cp.atoms.affine.binary_operators.multiply(
+                      conversion_sign_constraints,
+                      x[:,num_endmembers:]) >= 0)
+            else:
+                constraints.append(
+                  cp.atoms.affine.binary_operators.multiply(
+                      np.tile(A=conversion_sign_constraints[:,None],
+                              reps=(1,num_conversion_ratios)),
+                      x[:,num_endmembers:]) >= 0)
+        prob = cp.Problem(obj, constraints)
+        prob.solve(verbose=False, max_iter=50000)
+        #settign verbose=True will generate more print statements and slow down the analysis
+        
+        print("status:", prob.status)
+        print("optimal value", prob.value)
+
+        if (prob.status=="infeasible"):
+            raise RuntimeError("Optimization failed - "
+                               +"try lowering the parameter weights?")
+        else:
+            #weighted sum of squared of the residuals
+            original_resid_wsumsq = np.sum(np.square((x.value@A) - b))
+
+            endmember_fractions = x.value[:,:num_endmembers]
+            ##enforce the constraints (nonnegativity, sum to 1) on
+            ## endmember_fractions
+            endmember_fractions = np.maximum(endmember_fractions, 0) 
+            endmember_fractions = (endmember_fractions/
+                np.sum(endmember_fractions,axis=-1)[:,None])
+
+            if (num_converted_params > 0):
+                oxygen_deficits = x.value[:,num_endmembers:]
+                if (hasattr(conversion_sign_constraints, '__len__')):
+                    gt_zero_mask = conversion_sign_constraints > 0
+                    oxygen_deficits[gt_zero_mask] = np.maximum(
+                        oxygen_deficits[gt_zero_mask], 0.0) 
+                    lt_zero_mask = conversion_sign_constraints < 0
+                    oxygen_deficits[lt_zero_mask] = np.minimum(
+                        oxygen_deficits[lt_zero_mask], 0.0) 
+                else:
+                    if (conversion_sign_constraints > 0):
+                        oxygen_deficits = np.maximum(oxygen_deficits, 0.0)
+                    elif (conversion_sign_constraints < 0):
+                        oxygen_deficits = np.minimum(oxygen_deficits, 0.0)
+                    else:
+                        assert False, conversion_sign_constraints
+                #fixed_x is x that is forced to satisfy the constraints
+                fixed_x = np.concatenate(
+                            [endmember_fractions, oxygen_deficits], axis=-1)
+            else:
+                oxygen_deficits = None
+                fixed_x = np.concatenate([endmember_fractions,
+                 np.zeros((len(endmember_fractions), num_conversion_ratios))],
+                 axis=-1)
+
+            afterfixing_resid_wsumsq = np.sum(np.square(fixed_x@A - b))
+            print("Original weighted sum squares:",original_resid_wsumsq)
+            print("Post fix weighted sum squared:",afterfixing_resid_wsumsq)
+
+            perobs_weighted_resid_sq =\
+                np.sum(np.square((fixed_x@A) - b), axis=-1)
+            #TODO: enforce that the constraints are satisfied, and
+            #recompute residuals accordingly.
+        
+        return (fixed_x, endmember_fractions, oxygen_deficits,
+                perobs_weighted_resid_sq, prob)
 
     def construct_ideal_endmembers(self, ompa_soln):
 
@@ -254,13 +457,13 @@ class OMPAProblem(object):
         # matrix, we end up recapitulating the residuals
         #existing_endmemmat has dims of num_endmembers X params
         existing_endmemmat = self.get_endmem_mat(ompa_soln.endmember_df)
-        #self.water_mass_fractions has dims of num_obs X num_endmembers
+        #self.endmember_fractions has dims of num_obs X num_endmembers
         #Note: b and existing_endmemmat haven't been scaled by weighting yet,
         # so there is no need
         # to un-scale it here. Also note deltas_due_to_oxygen_deficits has
         # already been subtracted
         old_param_residuals = (b
-          - ompa_soln.water_mass_fractions@existing_endmemmat)
+          - ompa_soln.endmember_fractions@existing_endmemmat)
         np.testing.assert_almost_equal(old_param_residuals,
                                        ompa_soln.param_residuals, decimal=5)
 
@@ -268,9 +471,9 @@ class OMPAProblem(object):
         weighting = self.get_param_weighting()
         new_endmemmat_var =  cp.Variable(shape=existing_endmemmat.shape)  
         
-        #keeping the water_mass_fractions, what are the best end members?
+        #keeping the endmember_fractions, what are the best end members?
         obj = cp.Minimize(
-            cp.sum_squares(ompa_soln.water_mass_fractions@new_endmemmat_var
+            cp.sum_squares(ompa_soln.endmember_fractions@new_endmemmat_var
                            - b*weighting[None,:]))
         constraints = [] #no constraints for now
         prob = cp.Problem(obj, constraints)
@@ -286,7 +489,7 @@ class OMPAProblem(object):
             new_endmemmat = new_endmemmat_var.value/weighting[None,:]
             #Sanity check that the residuals got better
             new_param_residuals = (b
-                - ompa_soln.water_mass_fractions@new_endmemmat)
+                - ompa_soln.endmember_fractions@new_endmemmat)
             new_param_resid_wsumsq =\
                 np.sum(np.square(new_param_residuals*weighting[None,:]))
             old_param_resid_wsumsq =\
@@ -295,103 +498,28 @@ class OMPAProblem(object):
             print("New weighted residuals sumsquared:",new_param_resid_wsumsq)
             assert new_param_resid_wsumsq <= old_param_resid_wsumsq
 
-            #make a watermass data frame
+            #make a endmember data frame
             new_endmemmat_df = pd.DataFrame(OrderedDict(
-             [('watermassname',
-               list(ompa_soln.endmember_df["watermassname"]))]
+             [(ompa_soln.endmember_name_column,
+               list(ompa_soln.endmember_df[ompa_soln.endmember_name_column]))]
              +[(paramname, values) for paramname,values in
              zip(self.conserved_params_to_use+self.converted_params_to_use,
                  new_endmemmat.T) ])) 
             return new_endmemmat_df
 
-    def core_solve(self, A, b, num_conversion_ratios, num_converted_params,
-                   pairs_matrix, watermass_usagepenalty,
-                   conversion_sign_constraints, smoothness_lambda,
-                   verbose=True):
-  
-        #We are going to solve the following problem:
-        #P is the penalty matrix. It has dimensions of
-        #  (observations X end_members)
-        #Minimize (x@A - b)^2 + (x[:,:-num_conversion_ratios]*P)^2
-        #Subject to x[:,:-num_conversion_ratios] >= 0,
-        #           cp.sum(x[:,:-num_conversion_ratios], axis=1) == 1
-        # x has dimensions of observations X (end_members+num_conversion_ratios)
-        # the +1 row represents O2 deficit, for remineralization purposes
-        # A has dimensions of (end_members+num_conversion_ratios) X parameteres
-        # b has dimensions of observations X parameters 
-        
-        num_watermasses = len(A)-num_conversion_ratios
-        x = cp.Variable(shape=(len(b), len(A)))
-        obj = (cp.sum_squares(x@A - b) +
-                cp.sum_squares(cp.atoms.affine.binary_operators.multiply(
-                                    x[:,:num_watermasses],
-                                    watermass_usagepenalty) ))
-        if (smoothness_lambda is not None):
-            #leave out O2 deficit column from the smoothness penality as it's
-            # on a bit of a different scale.
-            obj += smoothness_lambda*cp.sum_squares(
-                    pairs_matrix@x[:,:num_watermasses])
-        obj = cp.Minimize(obj)
-        
-        #leave out the last column as it's the conversion ratio
-        constraints = [
-           x[:,:num_watermasses] >= 0,
-           cp.sum(x[:,:num_watermasses],axis=1)==1]
-        if (num_conversion_ratios > 0):
-            if (hasattr(conversion_sign_constraints, '__len__')==False):
-                constraints.append(
-                  cp.atoms.affine.binary_operators.multiply(
-                      conversion_sign_constraints,
-                      x[:,num_watermasses:]) >= 0)
-            else:
-                constraints.append(
-                  cp.atoms.affine.binary_operators.multiply(
-                      np.tile(A=conversion_sign_constraints[:,None],
-                              reps=(1,num_conversion_ratios)),
-                      x[:,num_watermasses:]) >= 0)
-        prob = cp.Problem(obj, constraints)
-        prob.solve(verbose=False, max_iter=50000)
-        #settign verbose=True will generate more print statements and slow down the analysis
-        
-        print("status:", prob.status)
-        print("optimal value", prob.value)
-
-        if (prob.status=="infeasible"):
-            raise RuntimeError("Optimization failed - "
-                               +"try lowering the parameter weights?")
-        else:
-            #weighted sum of squared of the residuals
-            original_resid_wsumsq = np.sum(np.square((x.value@A) - b))
-
-            water_mass_fractions = x.value[:,:num_watermasses]
-            ##enforce the constraints (nonnegativity, sum to 1) on
-            ## water_mass_fractions
-            #water_mass_fractions = np.maximum(water_mass_fractions, 0) 
-            #water_mass_fractions = (water_mass_fractions/
-            #    np.sum(water_mass_fractions,axis=-1)[:,None])
-            if (num_converted_params > 0):
-                oxygen_deficits = x.value[:,num_watermasses:]
-            else:
-               oxygen_deficits = None
-
-            perobs_weighted_resid_sq =\
-                np.sum(np.square((x.value@A) - b), axis=-1)
-            #TODO: enforce that the constraints are satisfied, and
-            #recompute residuals accordingly.
-        
-        return (x.value, water_mass_fractions, oxygen_deficits,
-                perobs_weighted_resid_sq, prob)
-
-    def iteratively_refine_ompa_solns(self, init_endmember_df, num_iterations):
+    def iteratively_refine_ompa_solns(self, init_endmember_df,
+            endmember_name_column, num_iterations):
         assert num_iterations >= 1,\
             "num_iterations must be >= 1; is "+str(num_iterations)
         print("On iteration 1")
-        ompa_solns = [self.solve(endmember_df=init_endmember_df)]
+        ompa_solns = [self.solve(endmember_df=init_endmember_df,
+                                 endmember_name_column=endmember_name_column)]
         for i in range(1,num_iterations):
             print("On iteration "+str(i+1))
             new_endmember_df =\
                 self.construct_ideal_endmembers(ompa_soln=ompa_solns[-1]) 
-            ompa_solns.append(self.solve(endmember_df=new_endmember_df))
+            ompa_solns.append(self.solve(endmember_df=new_endmember_df,
+                                  endmember_name_column=endmember_name_column))
         return ompa_solns 
 
 
