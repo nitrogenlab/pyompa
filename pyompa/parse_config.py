@@ -5,7 +5,6 @@ from .ompacore import OMPAProblem
 from .endmemberpenaltyfunc import EndMemExpPenaltyFunc 
 from .util import assert_in, assert_compatible_keys, assert_has_keys
 from collections import OrderedDict
-from .plotting import plot_ompaproblem_endmember_usagepenalties
 import json
 
 
@@ -41,6 +40,10 @@ def parse_endmembers_config(config):
     endmembers_df =\
         parse_df_from_config(config=config, config_file_type="endmembers")
     endmember_name_column = config["endmember_name_column"]
+
+    assert endmember_name_column in endmembers_df,(
+        endmember_name_column+" needs to be present in endmembers_df; "
+        +"the columns are "+str(endmembers_df.columns))
 
     return endmembers_df, endmember_name_column
 
@@ -114,16 +117,9 @@ def run_ompa_given_config(config):
           endmembername_to_usagepenaltyfunc=
             endmembername_to_usagepenaltyfunc)
 
-    #if (len(endmembername_to_usagepenaltyfunc) > 0):
-    #    print("endmember usage penalties:")
-    #    plot_ompaproblem_endmember_usagepenalties(
-    #        ompa_problem=ompa_problem,
-    #        xaxis_colname=xaxis_colname, yaxis_colname=yaxis_colname,
-    #        flip_y=flip_y)
-
     ompa_soln = ompa_problem.solve(
               endmember_df=endmember_df,
-              endmember_name_column="endmember_name") 
+              endmember_name_column=endmember_name_column) 
 
     if "export" in config:
         ompa_soln.export_to_csv(**config["export"])
@@ -131,5 +127,18 @@ def run_ompa_given_config(config):
     return ompa_soln
 
 
+def run_given_config_files(config_files, parser, func_to_run):
+    assert len(config_files) > 0, "At least one config file must be supplied"
+    concatenated_file_contents =\
+        "\n".join(open(x).read() for x in config_files) 
+    return func_to_run(parser.loads(concatenated_file_contents)) 
+
+
+def run_ompa_given_toml_config_files(toml_config_files):
+    return run_given_config_files(
+               config_files=toml_config_files,
+               parser=toml, func_to_run=run_ompa_given_config)
+
+
 def run_ompa_given_toml_config_file(toml_config_file):
-    return run_ompa_given_config(toml.loads(open(toml_config_file).read()))
+    return run_ompa_given_toml_config_files([toml_config_file])

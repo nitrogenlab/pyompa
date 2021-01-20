@@ -8,7 +8,7 @@ if __name__== '__main__':
           author="Avanti Shrikumar",
           author_email="avanti.shrikumar@gmail.com",
           url='https://github.com/nitrogenlab/pyompa',
-          version='0.3.0.2',
+          version='0.3.0.3',
           packages=find_packages(),
           setup_requires=[],
           install_requires=['numpy', 'pandas', 'cvxpy', 'scipy', 'toml'],
