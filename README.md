@@ -4,7 +4,7 @@ This is a python package for OMPA analysis. It is currently under development an
 ## Installation
 
 pyompa is on pypi, and can be installed using the following pip command:
-```
+```bash
 pip install pyompa
 ```
 pip comes installed with Python 2 >=2.7.9 or Python 3 >=3.4. If you find that pip is not installed, refer to [these instructions](https://pip.pypa.io/en/stable/installing/).
@@ -12,12 +12,12 @@ pip comes installed with Python 2 >=2.7.9 or Python 3 >=3.4. If you find that pi
 ## Running pyompa from the command line
 
 After installing pyompa, it can be run with a single command:
-```
+```bash
 run_ompa_given_config path/to/the/config/file.txt
 ```
 The configuration file specifies all the settings about where to find the observations .csv, the end-members .csv, which parameters to use, etc. An example configuration file is pasted below:
 
-```
+```bash
 #Comments can be added to the configuration file using the hashtag symbol (#).
 # Anything following the hashtag is ignored. FYI, the 'type' of configuration
 # file used by pyompa is a TOML configuration file (don't worry if you don't
