@@ -140,6 +140,7 @@ export_endmember_usage_penalties=true #whether to include the penalty function
 #                                      that ended up being used. Columns will
 #                                      have the title "[endmembername]_penalty"
 ```
+As of version v0.3.0.3-alpha, you can supply multiple configuration files to pyompa, and the contents of the configuration files will be concatenated together under-the-hood and treated as though they were one single configuration file. This can be useful when you want to try out different settings for only one part of the configuration (e.g. if you want to explore different parameter weightings, you can separate out the parameters configuration into its own file).
 
 ## Running from a colab notebook/in python
 For more advanced users. See https://colab.research.google.com/github/nitrogenlab/GP15_watermassanalysis/blob/5dc1fc3d484d8153f5351980e55a05d84fe2cddf/config_files_demo.ipynb for an example.
