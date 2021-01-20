@@ -107,7 +107,7 @@ def plot_residuals(param_residuals, param_names, xaxis_vals, xaxis_label,
         param_resid_maxabs = np.max(np.abs(param_residuals[:,i]))
         plt.scatter(x=xaxis_vals,
                     y=yaxis_vals,
-                    c=param_resid_maxabs,
+                    c=param_residuals[:,i],
                     cmap="RdBu")
         plt.colorbar()
         plt.clim(-param_resid_maxabs, param_resid_maxabs)
