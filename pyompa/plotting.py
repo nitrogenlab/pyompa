@@ -60,10 +60,13 @@ def plot_endmember_fractions(xaxis_vals, xaxis_label, yaxis_vals, yaxis_label,
         plt.title(endmembernames[i])
     if (total_oxygen_deficit is not None):
         plt.sca(ax[num_endmembers])
-        plt.scatter(xaxis_vals, yaxis_vals, c=total_oxygen_deficit)
+        plt.scatter(xaxis_vals, yaxis_vals, c=total_oxygen_deficit,
+                    cmap="RdBu")
+        max_abs_deficit = np.max(np.abs(total_oxygen_deficit))
         if (flip_y):
             plt.ylim(plt.ylim()[1], plt.ylim()[0])
         plt.colorbar()
+        plt.clim(-max_abs_deficit, max_abs_deficit)
         plt.xlabel(xaxis_label)
         plt.title("oxygen deficit")
     for i in range(len(converted_param_names)):
@@ -101,11 +104,13 @@ def plot_residuals(param_residuals, param_names, xaxis_vals, xaxis_label,
     fig, ax = plt.subplots(nrows=1, ncols=num_params, figsize=(5*num_params,4))
     for i in range(param_residuals.shape[1]):
         plt.sca(ax[i])
+        param_resid_maxabs = np.max(np.abs(param_residuals[:,i]))
         plt.scatter(x=xaxis_vals,
                     y=yaxis_vals,
-                    c=np.abs(param_residuals[:,i]),
-                    cmap="viridis")
+                    c=param_resid_maxabs,
+                    cmap="RdBu")
         plt.colorbar()
+        plt.clim(-param_resid_maxabs, param_resid_maxabs)
         plt.xlabel(xaxis_label)
         if (i==0):
             plt.ylabel(yaxis_label)
