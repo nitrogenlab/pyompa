@@ -7,7 +7,7 @@ pyompa is on pypi, and can be installed using the following pip command:
 ```
 pip install pyompa
 ```
-pip comes installed with Python 2 >=2.7.9 or Python 3 >=3.4. It will also be installed if you are running pyompa in a Colab Notebook (see below for instructions). If you find that pip is not installed, refer to [these instructions](https://pip.pypa.io/en/stable/installing/).
+pip comes installed with Python 2 >=2.7.9 or Python 3 >=3.4. If you find that pip is not installed, refer to [these instructions](https://pip.pypa.io/en/stable/installing/).
 
 ## Running pyompa from the command line
 
@@ -143,4 +143,4 @@ export_endmember_usage_penalties=true #whether to include the penalty function
 As of version v0.3.0.3-alpha, you can supply multiple configuration files to pyompa, and the contents of the configuration files will be concatenated together under-the-hood and treated as though they were one single configuration file. This can be useful when you want to try out different settings for only one part of the configuration (e.g. if you want to explore different parameter weightings, you can separate out the parameters configuration into its own file).
 
 ## Running from a colab notebook/in python
-For more advanced users. See https://github.com/nitrogenlab/GP15_watermassanalysis/blob/main/config_files_demo.ipynb for an example.
+See https://github.com/nitrogenlab/GP15_watermassanalysis/blob/main/config_files_demo.ipynb for an example.
