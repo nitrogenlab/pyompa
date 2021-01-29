@@ -141,7 +141,7 @@ class OMPAProblem(object):
                  +" observations data frame columns are "
                  +str(list(self.obs_df.columns)))
 
-        with_drop_na = (self.obs_df[param_names]).dropna()
+        with_drop_na = self.obs_df.dropna(subset=param_names)
         if (len(with_drop_na) < len(self.obs_df)):
             print("Dropping "+str(len(self.obs_df)-len(with_drop_na))
                   +" rows that have NA values in the observations")
