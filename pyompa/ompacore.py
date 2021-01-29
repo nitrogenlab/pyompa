@@ -118,13 +118,9 @@ class OMPAProblem(object):
         self.endmembername_to_usagepenaltyfunc =\
           endmembername_to_usagepenaltyfunc
         self.process_params()
+        self.drop_na_rows()
         self.prep_endmember_usagepenalties() 
 
-    @classmethod
-    def from_toml_string(cls, toml_string):
-        parsed_toml = toml.loads(toml_string) 
-        observations_df_config = parsed_toml["observations_config"] 
-        
 
     def process_params(self):
         #check that every param in self.paramsandweighting_converted is
@@ -139,12 +135,18 @@ class OMPAProblem(object):
         else:
             self.converted_params_to_use, self.converted_weighting = [], []
 
-        for param_name in (self.conserved_params_to_use
-                           +self.converted_params_to_use):
+        param_names = self.converted_params_to_use+self.conserved_params_to_use 
+        for param_name in (param_names):
             assert param_name in self.obs_df,\
                 (param_name+" not specified in observations data frame;"
                  +" observations data frame columns are "
                  +str(list(self.obs_df.columns)))
+
+        with_drop_na = (self.obs_df[param_names]).dropna()
+        if (len(with_drop_na) < len(self.obs_df)):
+            print("Dropping "+str(len(self.obs_df)-len(with_drop_na))
+                  +" rows that have NA values in the observations")
+            self.obs_df = with_drop_na
 
         if (max(self.converted_weighting+self.conserved_weighting) > 100):
             print("Warning: having very large param weights can lead to"
