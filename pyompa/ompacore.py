@@ -118,7 +118,6 @@ class OMPAProblem(object):
         self.endmembername_to_usagepenaltyfunc =\
           endmembername_to_usagepenaltyfunc
         self.process_params()
-        self.drop_na_rows()
         self.prep_endmember_usagepenalties() 
 
 
