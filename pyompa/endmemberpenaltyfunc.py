@@ -58,6 +58,7 @@ class EndMemExpPenaltyFunc(object):
     SPECTYPE_TO_FACTORYFUNC = {
         'density_default': get_default_density_exp_penalty_func,
         'latlon_default': get_default_latlon_exp_penalty_func,
+        'depth_default': get_default_depth_exp_penalty_func,
         'other': get_exponential_from_bounds_func}
 
     def __init__(self, spec):
