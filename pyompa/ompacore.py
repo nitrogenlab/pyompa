@@ -185,7 +185,8 @@ class OMPAProblem(object):
             if endmembername not in endmember_names:
                 print("WARNING!!! You specified a usage penalty for "
                  +str(endmembername)+" but that endmember did not appear "
-                 +"in the endmember data frame")
+                 +"in the endmember data frame; endmembers are "
+                 +str(endmember_names))
                  
         return endmember_usagepenalty
 
