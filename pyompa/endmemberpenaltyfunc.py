@@ -23,6 +23,12 @@ def get_default_latlon_exp_penalty_func(alpha=0.05, beta=100, **kwargs):
             alpha=alpha, beta=beta, **kwargs) 
 
 
+#same as get_exponential_from_bounds_func but with defaults for alpha and beta
+def get_default_depth_exp_penalty_func(alpha=0.001, beta=50, **kwargs):
+    return get_exponential_from_bounds_func(
+            alpha=alpha, beta=beta, **kwargs) 
+
+
 #Returns a penalty function that takes an observations data frame as input
 # and outputs the total endmember usage penalty on each observation.
 #colname_to_penaltyfunc is a mapping from a column in the observations data
