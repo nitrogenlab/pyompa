@@ -120,11 +120,6 @@ class OMPAProblem(object):
         self.process_params()
         self.prep_endmember_usagepenalties() 
 
-    @classmethod
-    def from_toml_string(cls, toml_string):
-        parsed_toml = toml.loads(toml_string) 
-        observations_df_config = parsed_toml["observations_config"] 
-        
 
     def process_params(self):
         #check that every param in self.paramsandweighting_converted is
@@ -139,12 +134,18 @@ class OMPAProblem(object):
         else:
             self.converted_params_to_use, self.converted_weighting = [], []
 
-        for param_name in (self.conserved_params_to_use
-                           +self.converted_params_to_use):
+        param_names = self.converted_params_to_use+self.conserved_params_to_use 
+        for param_name in (param_names):
             assert param_name in self.obs_df,\
                 (param_name+" not specified in observations data frame;"
                  +" observations data frame columns are "
                  +str(list(self.obs_df.columns)))
+
+        with_drop_na = self.obs_df.dropna(subset=param_names)
+        if (len(with_drop_na) < len(self.obs_df)):
+            print("Dropping "+str(len(self.obs_df)-len(with_drop_na))
+                  +" rows that have NA values in the observations")
+            self.obs_df = with_drop_na
 
         if (max(self.converted_weighting+self.conserved_weighting) > 100):
             print("Warning: having very large param weights can lead to"
@@ -182,9 +183,10 @@ class OMPAProblem(object):
         #print a warning if specified a usage penalty that was not used
         for endmembername in self.endmembername_to_usagepenalty:
             if endmembername not in endmember_names:
-                print("WARNING!!! You specified a usage penalty for "
-                 +str(endmembername)+" but that endmember did not appear "
-                 +"in the endmember data frame")
+                raise RuntimeError("You specified a usage penalty for "
+                 +endmembername+" but that endmember did not appear "
+                 +"in the endmember data frame; endmembers are "
+                 +str(endmember_names))
                  
         return endmember_usagepenalty
 
