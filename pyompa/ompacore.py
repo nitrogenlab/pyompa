@@ -109,7 +109,8 @@ class OMPASoln(object):
                                         endmem_fracs,
                                         np.zeros_like(oxy_def)], axis=0) 
 
-                A_eq = usagepenalty[None,:] @ self.nullspace_A
+                A_eq = (usagepenalty[None,:] @
+                        self.nullspace_A[:len(endmem_fracs)])
                 b_eq = 0
 
                 res = scipy.optimize.linprog(c=c, A_ub=A_ub, b_ub=b_ub,
