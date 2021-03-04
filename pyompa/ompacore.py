@@ -35,7 +35,7 @@ class OMPASoln(object):
         self.nullspace_A = nullspace_A
         self.__dict__.update(kwargs)
 
-    def core_quantify_ambiguity_via_nullspace(self, obj_weights):
+    def core_quantify_ambiguity_via_nullspace(self, obj_weights, verbose=False):
         #obj_weights should be an array of weights that define the objective
         # of the linear program, in the form "o @ (s + N(A) @ v)" (where
         # o is the objective, s is the solution, N(A) is the null space of A)
@@ -110,7 +110,7 @@ class OMPASoln(object):
                    usagepenalty@endmem_frac_deltas == 0 
                 ] 
                 prob = cp.Problem(obj, constraints)
-                prob.solve(verbose=False, max_iter=50000)
+                prob.solve(verbose=verbose)
                 if (prob.status == "infeasible"):
                     return (None, None), -np.inf
                 else:
