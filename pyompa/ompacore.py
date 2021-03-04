@@ -128,6 +128,9 @@ class OMPASoln(object):
                     (new_endmem_fracs, new_oxy_def) = (
                      negodsign_soln, negodsign_obj)
 
+                print(new_endmem_fracs, new_endmem_fracs.shape)
+                print(new_oxy_def, new_oxy_def.shape)
+
                 assert new_endmem_fracs is not None
                 assert np.abs(np.sum(new_endmem_fracs) - 1) < 1e-7
                 #fix numerical issues with soln
