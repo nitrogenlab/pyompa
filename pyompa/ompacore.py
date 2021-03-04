@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import scipy
 import scipy.spatial
+import scipy.linalg
 from collections import OrderedDict
 
 
@@ -12,14 +13,17 @@ class OMPASoln(object):
     def __init__(self, endmember_df, endmember_name_column,
                        ompa_problem,
                        endmember_fractions,
+                       oxygen_deficits,
                        total_oxygen_deficit,
                        param_residuals,
                        effective_conversion_ratios,
+                       nullspace_A,
                        **kwargs):
         self.endmember_df = endmember_df
         self.endmember_name_column = endmember_name_column
         self.ompa_problem = ompa_problem
         self.endmember_fractions = endmember_fractions
+        self.oxygen_deficits = oxygen_deficits
         self.total_oxygen_deficit = total_oxygen_deficit
         self.param_residuals = param_residuals
         self.effective_conversion_ratios = effective_conversion_ratios
@@ -28,7 +32,125 @@ class OMPASoln(object):
         self.converted_params_to_use = ompa_problem.converted_params_to_use   
         self.endmembername_to_usagepenalty =\
             ompa_problem.endmembername_to_usagepenalty
+        self.nullspace_A = nullspace_A
         self.__dict__.update(kwargs)
+
+    def core_quantify_ambiguity_via_nullspace(self, obj_weights):
+        #obj_weights should be an array of weights that define the objective
+        # of the linear program, in the form "o @ (s + N(A) @ v)" (where
+        # o is the objective, s is the solution, N(A) is the null space of A)
+
+        #For each soln s (length "num_endmem + num_conv_ratios"), the
+        # relevant linear programming constraints are
+        #For rows pertaining to end member fractions:
+        # "s + N(A) @ v >= 0" and "s + N(A) @ v <= 1" for endmember usgae
+        # "s + N(A) @ v >= 0" OR "s + N(A) v <= 0" for oxygen usage 
+        # (the 'or' means our solution space will basically contain two
+        #  polytopes that may be disconnected (if there are multiple
+        #  remin ratios; one polytope for positive and one for
+        #  negative oxygen usage)
+        #If there are any points with nonzero endmember usage constraints,
+        # we can further add the constraint that P @ (N(A) @ v) = 0
+
+        #Notes on how to determine the full feasible set (time complexity
+        # seems to increase exponentially:)
+        #If we are in |v| dimensional space, then the intersection of
+        # |v| nonredundant equality constraints will define the corners. 
+        #The available equality constraints are:
+        # num_endmem constraints of the form endmem == 0
+        # num_endmem constraints of the form endmem == 1
+        # num_convratio constraints of the form endmem == 0
+        # optionally one more constraint if there are nonzero usage penalties
+        #Full solution:
+        #From the (2*num_endmem + num_convratio + 1?) equations, we have
+        # to check all (2*num_endmem + num_convratio + 1?)-choose-|v| subsets
+        #Then for each subset, we need to solve the equation, and check
+        # whether the solution satisfies the remaining constraints.
+        #If the solution has negative O usage (has to be neg for all
+        # conv ratios), we store the point in the negative O usage polytope;
+        # otherwise, we store the point in the positive O usage polytope
+        #We would then return the two polytopes
+   
+        #In practice, however, we are probably interested in quantifying the
+        # limits of something (e.g. max and min values of an end member, or
+        # max/min amounts of a tracer that could be explained by mixing),
+        # in which case it is not necessary to solve for the full convex
+        # polytope; the problem can just be solved as a linear program
+
+        endmember_names = list(self.endmember_df[endmember_name_column])
+        endmember_usagepenalty =\
+            self.prep_endmember_usagepenalty_mat(endmember_names)
+
+        #For each observation, we can solve the linear program
+        new_perobs_endmember_fractions = []
+        new_perobs_oxygen_deficits = []
+        perobs_obj = []
+        for obs_idx in range(len(self.endmember_fractions)):
+            endmem_fracs = self.endmember_fractions[obs_idx] 
+            assert len(endmem_fracs)==len(endmember_names)
+            oxy_def = self.oxygen_deficits[obs_idx] 
+            usagepenalty = endmember_usagepenalty[obj_idx]
+
+            assert len(usagepenalty) == len(endmem_fracs)
+            assert ((len(endmem_fracs) + len(oxy_def))
+                    == self.nullspace_A.shape[0])
+            assert len(obj_weights) == self.nullspace_A.shape[0]
+
+            def compute_soln(oxy_def_sign):
+                v = cp.Variable(shape=(self.nullspace_A.shape[1]))
+                obj = cp.Maximize(cp.sum(obj_weights @ (self.nullspace_A@v)))
+                endmem_frac_deltas = self.nullspace_A[:len(endmem_fracs)] @ v
+                new_endmem_fracs = (endmem_fracs + endmem_frac_deltas)
+                new_oxy_def = (oxy_def
+                  + self.nullspace_A[len(endmem_fracs):] @ v)
+                constraints = [
+                   new_endmem_fracs >= 0,
+                   new_endmem_fracs <= 1,
+                   new_oxy_def*oxy_def_sign >= 0,
+                   usagepenalty@endmem_frac_deltas == 0 
+                ] 
+                prob = cp.Problem(obj, constraints)
+                prob.solve(verbose=False, max_iter=50000)
+                if (prob.status == "infeasible"):
+                    return (None, None), -np.inf
+                else:
+                    return ((new_endmem_fracs.value, new_oxy_def.value),
+                            prob.value) #soln and optimal value
+
+            if (self.nullspace_A.shape[1] > 0):
+                posodsign_soln, posodsign_obj = compute_soln(1) 
+                negodsign_soln, negodsign_obj = compute_soln(-1) 
+                pos_wins = (posodsign_obj > negodsign_obj)
+                if (pos_wins):
+                    (new_endmem_fracs, new_oxy_def) = (
+                     posodsign_soln, posodsign_obj)
+                else:
+                    (new_endmem_fracs, new_oxy_def) = (
+                     negodsign_soln, negodsign_obj)
+
+                assert new_endmem_fracs is not None
+                assert np.abs(np.sum(new_endmem_fracs) - 1) < 1e-7
+                #fix numerical issues with soln
+                new_endmem_fracs = np.maximum(new_endmem_fracs, 0)
+                new_endmem_fracs = new_endmem_fracs/(np.sum(new_endmem_fracs))
+                if (pos_wins):
+                    new_oxy_def = np.maximum(new_oxy_def, 0)
+                else:
+                    new_oxy_def = np.minimum(new_oxy_def, 0)
+            else:
+                new_endmem_fracs = endmem_fracs
+                new_oxy_def = oxy_def 
+
+            obj = obj_weights@np.concatenate(
+                   [new_endmem_fracs, new_oxy_def], axis=0) 
+
+            new_perobs_endmember_fractions.append(new_endmem_fracs)
+            new_perobs_oxy_defs.append(new_oxy_def)
+            perobs_obj.append(obj) 
+
+        return (np.array(new_perobs_endmember_fractions),
+                np.array(new_perobs_oxy_defs),
+                np.array(perobs_obj))
 
     def export_to_csv(self, csv_output_name,
                             orig_cols_to_include=[],
@@ -213,6 +335,22 @@ class OMPAProblem(object):
         return np.array(endmember_df[self.conserved_params_to_use
                                      +self.converted_params_to_use])
 
+    def get_nullspace(self, M, R):
+        #Let M represent the end-member matrix - dimensions of end_mem x params
+        # the R represent the remin ratios - dims of num_remin_ratios x params
+        # |M.T R.T| x = 0
+        # |1   0  | 
+        # (where |1 0| represents the mass conservation constraint)
+        #The solutions of x will give us the null space
+        mat = np.concatenate(
+               [np.concatenate([np.transpose(M), np.transpose(R)], axis=1),
+                np.array([1 for i in range(len(M))]+[0 for i in range(len(R))])
+               ], axis=0)
+        ns = scipy.linalg.null_space(mat) 
+        if ns.shape[1] > 0:
+            assert np.allclose(mat.dot(ns), 0)
+        return ns
+
     def solve(self, endmember_df, endmember_name_column):
 
         for param_name in (self.conserved_params_to_use
@@ -233,12 +371,18 @@ class OMPAProblem(object):
         #Prepare A
         conversion_ratios, conversion_ratio_rows =\
             self.get_conversion_ratio_rows_of_A()
+        #conversion_ratio_rows = 'R'
+        endmem_mat = self.get_endmem_mat(endmember_df) #'M'
         #add a row to A for the ratios
         if (len(conversion_ratio_rows > 0)):
-            A = np.concatenate([self.get_endmem_mat(endmember_df),
-                                conversion_ratio_rows], axis=0)
+            A = np.concatenate([endmem_mat, conversion_ratio_rows], axis=0)
         else:
-            A = self.get_endmem_mat(endmember_df)
+            A = endmem_mat
+
+        #compute the nullspace of A - will be useful for disentangling
+        # ambiguity in the solution
+        nullspace_A = self.get_nullspace(M=endmem_mat,
+                                         R=conversion_ratio_rows)
 
         #prepare b
         b = self.get_b()
@@ -332,6 +476,7 @@ class OMPAProblem(object):
         else:
             total_oxygen_deficit = None
             effective_conversion_ratios = None
+           
 
         return OMPASoln(endmember_df=endmember_df,
                   ompa_problem=self,
@@ -343,7 +488,8 @@ class OMPAProblem(object):
                   resid_wsumsq=np.sum(perobs_weighted_resid_sq),
                   param_residuals=param_residuals,
                   total_oxygen_deficit=total_oxygen_deficit,
-                  effective_conversion_ratios=effective_conversion_ratios)
+                  effective_conversion_ratios=effective_conversion_ratios,
+                  nullspace_A=nullspace_A)
 
     def core_solve(self, A, b, num_conversion_ratios, num_converted_params,
                    pairs_matrix, endmember_usagepenalty,
