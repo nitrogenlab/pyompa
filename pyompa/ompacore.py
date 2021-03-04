@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import scipy
 import scipy.spatial
-import scipy.linalg
+import scipy.optimize
 from collections import OrderedDict
 
 
