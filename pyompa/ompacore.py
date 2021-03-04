@@ -122,18 +122,16 @@ class OMPASoln(object):
                 negodsign_soln, negodsign_obj = compute_soln(-1) 
                 pos_wins = (posodsign_obj > negodsign_obj)
                 if (pos_wins):
-                    (new_endmem_fracs, new_oxy_def) = (
-                     posodsign_soln, posodsign_obj)
+                    (new_endmem_fracs, new_oxy_def) = posodsign_soln
                 else:
-                    (new_endmem_fracs, new_oxy_def) = (
-                     negodsign_soln, negodsign_obj)
+                    (new_endmem_fracs, new_oxy_def) = negodsign_soln
 
                 print(new_endmem_fracs, new_endmem_fracs.shape)
                 print(new_oxy_def, new_oxy_def.shape)
 
                 assert new_endmem_fracs is not None
                 assert np.abs(np.sum(new_endmem_fracs) - 1) < 1e-7
-                #fix numerical issues with soln
+                #fix any numerical issues with soln
                 new_endmem_fracs = np.maximum(new_endmem_fracs, 0)
                 new_endmem_fracs = new_endmem_fracs/(np.sum(new_endmem_fracs))
                 if (pos_wins):
