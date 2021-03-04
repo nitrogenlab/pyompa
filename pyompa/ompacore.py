@@ -79,7 +79,7 @@ class OMPASoln(object):
 
         endmember_names = list(self.endmember_df[self.endmember_name_column])
         endmember_usagepenalty =\
-            self.prep_endmember_usagepenalty_mat(endmember_names)
+            self.ompa_problem.prep_endmember_usagepenalty_mat(endmember_names)
 
         #For each observation, we can solve the linear program
         new_perobs_endmember_fractions = []
