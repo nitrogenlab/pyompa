@@ -97,30 +97,43 @@ class OMPASoln(object):
             assert len(obj_weights) == self.nullspace_A.shape[0]
 
             def compute_soln(oxy_def_sign):
-                v = cp.Variable(shape=(self.nullspace_A.shape[1]))
-                obj = cp.Minimize( (obj_weights @ self.nullspace_A) @v )
+
+                c = (obj_weights @ self.nullspace_A)
+
+                A_ub = np.concatenate([
+                        self.nullspace_A[:len(endmem_fracs)],
+                        -(self.nullspace_A[:len(endmem_fracs)]),
+                        -1*oxy_def_sign*self.nullspace_A[len(endmem_fracs):]
+                    ], axis=0)
+                b_ub = np.concatenate([ 1-endmem_fracs,
+                                        endmem_fracs,
+                                        np.zeros_like(oxy_def)], axis=0) 
+
+                A_eq = usagepenalty[None,:] @ self.nullspace_A
+                b_eq = 0
+
+                res = scipy.optimize.linprog(c=c, A_ub=A_ub, b_ub=b_ub,
+                                             A_eq=A_eq, b_eq=b_eq) 
+
+                if (res.success == False):
+                    fun = np.inf
+                else:
+                    fun = res.fun
+
+                v = res.x
+
                 endmem_frac_deltas = self.nullspace_A[:len(endmem_fracs)] @ v
                 new_endmem_fracs = (endmem_fracs + endmem_frac_deltas)
                 new_oxy_def = (oxy_def
                   + self.nullspace_A[len(endmem_fracs):] @ v)
-                constraints = [
-                   new_endmem_fracs >= 0,
-                   new_endmem_fracs <= 1,
-                   new_oxy_def*oxy_def_sign >= 0,
-                   usagepenalty@endmem_frac_deltas == 0 
-                ] 
-                prob = cp.Problem(obj, constraints)
-                prob.solve(verbose=verbose)
-                if (prob.status == "infeasible"):
-                    return (None, None), -np.inf
-                else:
-                    return ((new_endmem_fracs.value, new_oxy_def.value),
-                            prob.value) #soln and optimal value
+
+                return ((new_endmem_fracs, new_oxy_def),
+                        fun) #soln and optimal value
 
             if (self.nullspace_A.shape[1] > 0):
                 posodsign_soln, posodsign_obj = compute_soln(1) 
                 negodsign_soln, negodsign_obj = compute_soln(-1) 
-                pos_wins = (posodsign_obj > negodsign_obj)
+                pos_wins = (posodsign_obj < negodsign_obj)
                 if (pos_wins):
                     (new_endmem_fracs, new_oxy_def) = posodsign_soln
                 else:
