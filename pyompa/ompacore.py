@@ -89,7 +89,7 @@ class OMPASoln(object):
             endmem_fracs = self.endmember_fractions[obs_idx] 
             assert len(endmem_fracs)==len(endmember_names)
             oxy_def = self.oxygen_deficits[obs_idx] 
-            usagepenalty = endmember_usagepenalty[obj_idx]
+            usagepenalty = endmember_usagepenalty[obs_idx]
 
             assert len(usagepenalty) == len(endmem_fracs)
             assert ((len(endmem_fracs) + len(oxy_def))
