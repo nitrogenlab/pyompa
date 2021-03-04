@@ -98,7 +98,7 @@ class OMPASoln(object):
 
             def compute_soln(oxy_def_sign):
                 v = cp.Variable(shape=(self.nullspace_A.shape[1]))
-                obj = cp.Maximize(cp.sum(obj_weights @ (self.nullspace_A@v)))
+                obj = cp.Minimize( (obj_weights @ self.nullspace_A) @v )
                 endmem_frac_deltas = self.nullspace_A[:len(endmem_fracs)] @ v
                 new_endmem_fracs = (endmem_fracs + endmem_frac_deltas)
                 new_oxy_def = (oxy_def
@@ -146,11 +146,11 @@ class OMPASoln(object):
                    [new_endmem_fracs, new_oxy_def], axis=0) 
 
             new_perobs_endmember_fractions.append(new_endmem_fracs)
-            new_perobs_oxy_defs.append(new_oxy_def)
+            new_perobs_oxygen_deficits.append(new_oxy_def)
             perobs_obj.append(obj) 
 
         return (np.array(new_perobs_endmember_fractions),
-                np.array(new_perobs_oxy_defs),
+                np.array(new_perobs_oxygen_deficits),
                 np.array(perobs_obj))
 
     def export_to_csv(self, csv_output_name,
