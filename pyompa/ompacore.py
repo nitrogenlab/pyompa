@@ -77,7 +77,7 @@ class OMPASoln(object):
         # in which case it is not necessary to solve for the full convex
         # polytope; the problem can just be solved as a linear program
 
-        endmember_names = list(self.endmember_df[endmember_name_column])
+        endmember_names = list(self.endmember_df[self.endmember_name_column])
         endmember_usagepenalty =\
             self.prep_endmember_usagepenalty_mat(endmember_names)
 
