@@ -344,7 +344,8 @@ class OMPAProblem(object):
         #The solutions of x will give us the null space
         mat = np.concatenate(
                [np.concatenate([np.transpose(M), np.transpose(R)], axis=1),
-                np.array([1 for i in range(len(M))]+[0 for i in range(len(R))])
+                np.array([1 for i in range(len(M))]
+                         +[0 for i in range(len(R))])[None,:]
                ], axis=0)
         ns = scipy.linalg.null_space(mat) 
         if ns.shape[1] > 0:
