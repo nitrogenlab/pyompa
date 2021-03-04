@@ -342,10 +342,9 @@ class OMPAProblem(object):
         # |1   0  | 
         # (where |1 0| represents the mass conservation constraint)
         #The solutions of x will give us the null space
-        print(M.shape)
-        print(R.shape)
         mat = np.concatenate(
-               [np.concatenate([np.transpose(M), np.transpose(R)], axis=1),
+               [(np.concatenate([np.transpose(M), np.transpose(R)], axis=1)
+                 if len(R) > 0 else np.transpose(M)),
                 np.array([1 for i in range(len(M))]
                          +[0 for i in range(len(R))])[None,:]
                ], axis=0)
