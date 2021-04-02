@@ -243,7 +243,8 @@ class OMPAProblem(object):
                        paramsandweighting_converted,
                        conversionratios,
                        smoothness_lambda,
-                       endmembername_to_usagepenaltyfunc):
+                       endmembername_to_usagepenaltyfunc,
+                       sumtooneconstraint=True):
         self.obs_df = obs_df
         self.paramsandweighting_conserved = paramsandweighting_conserved
         self.paramsandweighting_converted = paramsandweighting_converted
@@ -253,6 +254,7 @@ class OMPAProblem(object):
           endmembername_to_usagepenaltyfunc
         self.process_params()
         self.prep_endmember_usagepenalties() 
+        self.sumtooneconstraint = sumtooneconstraint #apply hard contraint
 
 
     def process_params(self):
@@ -535,9 +537,9 @@ class OMPAProblem(object):
         obj = cp.Minimize(obj)
         
         #leave out the last column as it's the conversion ratio
-        constraints = [
-           x[:,:num_endmembers] >= 0,
-           cp.sum(x[:,:num_endmembers],axis=1)==1]
+        constraints = [x[:,:num_endmembers] >= 0]
+        if (self.sumtooneconstraint):
+            constraints.append(cp.sum(x[:,:num_endmembers],axis=1)==1)
         if (num_conversion_ratios > 0):
             if (hasattr(conversion_sign_constraints, '__len__')==False):
                 constraints.append(
@@ -568,8 +570,9 @@ class OMPAProblem(object):
             ##enforce the constraints (nonnegativity, sum to 1) on
             ## endmember_fractions
             endmember_fractions = np.maximum(endmember_fractions, 0) 
-            endmember_fractions = (endmember_fractions/
-                np.sum(endmember_fractions,axis=-1)[:,None])
+            if (self.sumtooneconstraint):
+                endmember_fractions = (endmember_fractions/
+                    np.sum(endmember_fractions,axis=-1)[:,None])
 
             if (num_converted_params > 0):
                 oxygen_deficits = x.value[:,num_endmembers:]
