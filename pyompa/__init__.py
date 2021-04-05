@@ -1,5 +1,5 @@
 from __future__ import division, print_function
-from .ompacore import OMPAProblem 
+from .ompacore import OMPAProblem, ConvertedParamGroup
 from .thermocline_array import ThermoclineArrayOMPAProblem 
 from .endmemberpenaltyfunc import EndMemExpPenaltyFunc
 from .plotting import (plot_ompasoln_endmember_fractions,

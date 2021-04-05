@@ -39,13 +39,15 @@ def plot_ompasoln_endmember_usagepenalties(
 
 
 def plot_endmember_fractions(xaxis_vals, xaxis_label, yaxis_vals, yaxis_label,
-        endmember_fractions, endmembernames, total_oxygen_deficit,
-        effective_conversion_ratios, converted_param_names,
+        endmember_fractions, endmembernames,
+        groupname_to_totalconvertedvariable,
+        groupname_to_effectiveconversionratios,
         flip_y=True):
     num_endmembers = endmember_fractions.shape[1]
     num_figs = (num_endmembers +
-                (1+len(converted_param_names)
-                 if total_oxygen_deficit is not None else 0))
+                len(groupname_to_totalconvertedvariable) +
+                sum([len(x) for x in
+                     groupname_to_effectiveconversionratios.values()]))
     fig, ax = plt.subplots(nrows=1, ncols=num_figs, figsize=(5*num_figs,4))
     for i in range(num_endmembers):
         plt.sca(ax[i])
@@ -56,29 +58,35 @@ def plot_endmember_fractions(xaxis_vals, xaxis_label, yaxis_vals, yaxis_label,
         if (flip_y):
             plt.ylim(plt.ylim()[1], plt.ylim()[0])
         plt.colorbar()
-        plt.clim(0.0, 1.0)
+        plt.clim(0.0, max(1.0,np.max(endmember_fractions[:,i])) )
         plt.title(endmembernames[i])
-    if (total_oxygen_deficit is not None):
-        plt.sca(ax[num_endmembers])
-        plt.scatter(xaxis_vals, yaxis_vals, c=total_oxygen_deficit,
-                    cmap="RdBu")
-        max_abs_deficit = np.max(np.abs(total_oxygen_deficit))
-        if (flip_y):
-            plt.ylim(plt.ylim()[1], plt.ylim()[0])
-        plt.colorbar()
-        plt.clim(-max_abs_deficit, max_abs_deficit)
-        plt.xlabel(xaxis_label)
-        plt.title("oxygen deficit")
-    for i in range(len(converted_param_names)):
-        plt.sca(ax[num_endmembers+1+i])
+    plotidx = num_endmembers
+    for groupname in groupname_to_totalconvertedvariable:
+        plt.sca(ax[plotidx])
+        plotidx += 1
+        convar_vals = groupname_to_totalconvertedvariable[groupname]
         plt.scatter(xaxis_vals, yaxis_vals,
-                    c=1.0/effective_conversion_ratios[:,i])
+                    c=convar_vals,
+                    cmap=("RdBu"))
+        max_abs_convval = np.max(np.abs(convar_vals))
         if (flip_y):
             plt.ylim(plt.ylim()[1], plt.ylim()[0])
         plt.colorbar()
+        plt.clim(-max_abs_convval, max_abs_convval)
         plt.xlabel(xaxis_label)
-        plt.title(converted_param_names[i]
-                  +" \nconversion ratio (relative to oxygen)")
+        plt.title(groupname)
+        effective_conversion_ratios =\
+            groupname_to_effectiveconversionratios[groupname]
+        for converted_param in effective_conversion_ratios:
+            plt.sca(ax[plotidx])
+            plotidx += 1
+            plt.scatter(xaxis_vals, yaxis_vals,
+                        c=effective_conversion_ratios[converted_param])
+            if (flip_y):
+                plt.ylim(plt.ylim()[1], plt.ylim()[0])
+            plt.colorbar()
+            plt.xlabel(xaxis_label)
+            plt.title(converted_param+":"+groupname+" ratio")
     plt.show()
 
 
@@ -92,9 +100,10 @@ def plot_ompasoln_endmember_fractions(ompa_soln, xaxis_colname,
         endmember_fractions=ompa_soln.endmember_fractions,
         endmembernames=list(
             ompa_soln.endmember_df[ompa_soln.endmember_name_column]),
-        total_oxygen_deficit=ompa_soln.total_oxygen_deficit,
-        effective_conversion_ratios=ompa_soln.effective_conversion_ratios,
-        converted_param_names=ompa_soln.converted_params_to_use,
+        groupname_to_totalconvertedvariable=
+         ompa_soln.groupname_to_totalconvertedvariable,
+        groupname_to_effectiveconversionratios=
+         ompa_soln.groupname_to_effectiveconversionratios,
         flip_y=flip_y)
 
 
@@ -124,8 +133,7 @@ def plot_ompasoln_residuals(ompa_soln, xaxis_colname,
                             yaxis_colname, flip_y=True):
     plot_residuals(
         param_residuals=ompa_soln.param_residuals,
-        param_names=(ompa_soln.conserved_params_to_use
-                      + ompa_soln.converted_params_to_use),
+        param_names=ompa_soln.param_names,
         xaxis_vals=ompa_soln.obs_df[xaxis_colname],
         xaxis_label=xaxis_colname,
         yaxis_vals=ompa_soln.obs_df[yaxis_colname],
