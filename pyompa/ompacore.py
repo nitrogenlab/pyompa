@@ -628,7 +628,9 @@ class OMPAProblem(object):
         if (len(self.convertedparam_groups) > 0):
             constraints.append(
               cp.atoms.affine.binary_operators.multiply(
-                  conversion_sign_constraints,
+                  (conversion_sign_constraints if
+                   len(conversion_sign_constraints)==len(x) else
+                   np.tile(conversion_sign_constraints, (len(x),1))),
                   x[:,num_endmembers:]) >= 0)
 
         prob = cp.Problem(obj, constraints)
