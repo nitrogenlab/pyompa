@@ -171,7 +171,7 @@ class OMPASoln(object):
                             export_orig_param_vals=True,
                             export_residuals=True,
                             export_endmember_fracs=True,
-                            export_oxygen_deficit=True,
+                            export_converted_var_usage=True,
                             export_conversion_ratios=True,
                             export_endmember_usage_penalties=False):
 
@@ -191,8 +191,7 @@ class OMPASoln(object):
             toexport_df_dict[orig_col] = self.obs_df[orig_col]
 
         if (export_residuals):
-             for param_idx,param_name in enumerate(
-                self.conserved_params_to_use+self.converted_params_to_use):
+             for param_idx,param_name in enumerate(self.param_names):
                 toexport_df_dict[param_name+"_resid"] =\
                     self.param_residuals[:,param_idx] 
 
@@ -202,16 +201,19 @@ class OMPASoln(object):
                 toexport_df_dict[endmembernames[endmember_idx]+"_frac"] =\
                     self.endmember_fractions[:,endmember_idx]
 
-        if (export_oxygen_deficit and
-            (self.total_oxygen_deficit is not None)):
-            toexport_df_dict["total_oxygen_deficit"] = self.total_oxygen_deficit
+        if (export_converted_var_usage):
+            for groupname in self.groupname_to_totalconvertedvariable:
+                toexport_df_dict[groupname] =\
+                    self.groupname_to_totalconvertedvariable[groupname]
 
-        if (export_conversion_ratios and
-            (self.total_oxygen_deficit is not None)): 
-            for converted_param_idx in range(len(self.converted_params_to_use)):
-                param_name = self.converted_params_to_use[converted_param_idx]
-                toexport_df_dict["oxygen_to_"+param_name+"_ratio"] =\
-                    1.0/self.effective_conversion_ratios[:,converted_param_idx]
+        if (export_conversion_ratios): 
+            for groupname in self.groupname_to_effectiveconversionratios:
+                effective_conversion_ratios =\
+                    groupname_to_effectiveconversionratios[groupname]
+                for converted_param in effective_conversion_ratios:
+                    toexport_df_dict[converted_param+"_to_"
+                     +groupname+"_ratio"] =\
+                        effective_conversion_ratios[converted_param]
 
         if (export_endmember_usage_penalties):
             for endmembername in endmembernames:
