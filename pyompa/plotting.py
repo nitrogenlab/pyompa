@@ -114,9 +114,6 @@ def plot_residuals(param_residuals, param_names, xaxis_vals, xaxis_label,
     for i in range(param_residuals.shape[1]):
         plt.sca(ax[i])
         param_resid_maxabs = np.max(np.abs(param_residuals[:,i]))
-        print(xaxis_vals.shape)
-        print(yaxis_vals.shape)
-        print(param_residuals.shape)
         plt.scatter(x=xaxis_vals,
                     y=yaxis_vals,
                     c=param_residuals[:,i],
