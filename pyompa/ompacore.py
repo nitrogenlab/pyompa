@@ -527,6 +527,7 @@ class OMPAProblem(object):
             # parameter space
             param_reconstruction = x@orig_A
             param_residuals =  param_reconstruction - orig_b
+            print("x:",x)
             print("x shape:", x.shape)
             print("orig_A:", orig_A.shape)
             print("Param residuals shape:", param_residuals.shape)
