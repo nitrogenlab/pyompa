@@ -527,6 +527,9 @@ class OMPAProblem(object):
             # parameter space
             param_reconstruction = x@orig_A
             param_residuals =  param_reconstruction - orig_b
+            print("Param residuals shape:", param_residuals.shape)
+            print("param reconstruction shape:", param_reconstruction.shape)
+            print("orig b shape:", orig_b.shape)
         else:
             param_residuals = None
 
@@ -576,8 +579,7 @@ class OMPAProblem(object):
             total_oxygen_deficit = None
             effective_conversion_ratios = None
 
-        return OMPASoln(endmember_df=endmember_df,
-                  ompa_problem=self,
+        return OMPASoln(endmember_df=endmember_df, ompa_problem=self,
                   endmember_names=endmember_names,
                   endmember_name_column=endmember_name_column,
                   status=prob.status,
