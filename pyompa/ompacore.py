@@ -17,6 +17,7 @@ class OMPASoln(object):
                        converted_variables,
                        param_residuals,
                        groupname_to_effectiveconversionratios,
+                       groupname_to_totalconvertedvariable,
                        nullspace_A,
                        **kwargs):
         self.endmember_df = endmember_df
@@ -27,6 +28,8 @@ class OMPASoln(object):
         self.param_residuals = param_residuals
         self.groupname_to_effectiveconversionratios =\
               groupname_to_effectiveconversionratios
+        self.groupname_to_totalconvertedvariable =\
+              groupname_to_totalconvertedvariable
         self.obs_df = ompa_problem.obs_df
         self.param_names = self.ompa_problem.param_names
         self.endmembername_to_usagepenalty =\
@@ -177,8 +180,7 @@ class OMPASoln(object):
         toexport_df_dict = OrderedDict()
 
         if (export_orig_param_vals):
-            orig_cols_to_include += (
-             self.conserved_params_to_use+self.converted_params_to_use)
+            orig_cols_to_include += self.param_names 
 
         for orig_col in orig_cols_to_include:
             assert orig_col in self.obs_df, (
