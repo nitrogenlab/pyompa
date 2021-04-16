@@ -35,7 +35,8 @@ class OMPASoln(object):
               groupname_to_totalconvertedvariable
         if (ompa_problem is not None):
             self.obs_df = ompa_problem.obs_df
-        self.param_names = self.ompa_problem.param_names
+        if (ompa_problem is not None):
+            self.param_names = self.ompa_problem.param_names
         self.endmembername_to_usagepenalty =\
             ompa_problem.endmembername_to_usagepenalty
         self.nullspace_A = nullspace_A
