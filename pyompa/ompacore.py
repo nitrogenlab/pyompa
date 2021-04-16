@@ -670,7 +670,7 @@ class OMPAProblem(object):
                            [endmember_fractions, converted_variables], axis=-1)
             else:
                 converted_variables = None
-                fixed_x = endmember_fractions,
+                fixed_x = endmember_fractions
 
             afterfixing_resid_wsumsq = np.sum(np.square(fixed_x@A - b))
             print("Original weighted sum squares:",original_resid_wsumsq)
