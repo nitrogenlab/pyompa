@@ -33,7 +33,8 @@ class OMPASoln(object):
               groupname_to_effectiveconversionratios
         self.groupname_to_totalconvertedvariable =\
               groupname_to_totalconvertedvariable
-        self.obs_df = ompa_problem.obs_df
+        if (ompa_problem is not None):
+            self.obs_df = ompa_problem.obs_df
         self.param_names = self.ompa_problem.param_names
         self.endmembername_to_usagepenalty =\
             ompa_problem.endmembername_to_usagepenalty
