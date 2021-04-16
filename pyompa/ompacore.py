@@ -209,7 +209,7 @@ class OMPASoln(object):
         if (export_conversion_ratios): 
             for groupname in self.groupname_to_effectiveconversionratios:
                 effective_conversion_ratios =\
-                    groupname_to_effectiveconversionratios[groupname]
+                    self.groupname_to_effectiveconversionratios[groupname]
                 for converted_param in effective_conversion_ratios:
                     toexport_df_dict[converted_param+"_to_"
                      +groupname+"_ratio"] =\
