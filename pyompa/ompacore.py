@@ -20,6 +20,9 @@ class OMPASoln(object):
                        groupname_to_totalconvertedvariable,
                        nullspace_A,
                        **kwargs):
+        if (endmember_df is not None):
+            self.endmember_names=list(
+                    self.endmember_df[self.endmember_name_column])
         self.endmember_df = endmember_df
         self.endmember_name_column = endmember_name_column
         self.ompa_problem = ompa_problem
@@ -79,7 +82,7 @@ class OMPASoln(object):
         # in which case it is not necessary to solve for the full convex
         # polytope; the problem can just be solved as a linear program
 
-        endmember_names = list(self.endmember_df[self.endmember_name_column])
+        endmember_names = self.endmember_names
         endmember_usagepenalty =\
             self.ompa_problem.prep_endmember_usagepenalty_mat(endmember_names)
 
@@ -195,10 +198,10 @@ class OMPASoln(object):
                 toexport_df_dict[param_name+"_resid"] =\
                     self.param_residuals[:,param_idx] 
 
-        endmembernames=list(self.endmember_df[self.endmember_name_column])
+        endmember_names = self.endmember_names
         if (export_endmember_fracs):
-            for endmember_idx in range(len(endmembernames)):
-                toexport_df_dict[endmembernames[endmember_idx]+"_frac"] =\
+            for endmember_idx in range(len(endmember_names)):
+                toexport_df_dict[endmember_names[endmember_idx]+"_frac"] =\
                     self.endmember_fractions[:,endmember_idx]
 
         if (export_converted_var_usage):
@@ -216,7 +219,7 @@ class OMPASoln(object):
                         effective_conversion_ratios[converted_param]
 
         if (export_endmember_usage_penalties):
-            for endmembername in endmembernames:
+            for endmembername in endmember_names:
                 if (endmembername in\
                     self.ompa_problem.endmembername_to_usagepenalty): 
                     endmember_usagepenalty = (self.ompa_problem.

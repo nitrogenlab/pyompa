@@ -98,8 +98,7 @@ def plot_ompasoln_endmember_fractions(ompa_soln, xaxis_colname,
         yaxis_vals=ompa_soln.obs_df[yaxis_colname],
         yaxis_label=yaxis_colname,
         endmember_fractions=ompa_soln.endmember_fractions,
-        endmembernames=list(
-            ompa_soln.endmember_df[ompa_soln.endmember_name_column]),
+        endmembernames=ompa_soln.endmember_names,
         groupname_to_totalconvertedvariable=
          ompa_soln.groupname_to_totalconvertedvariable,
         groupname_to_effectiveconversionratios=
@@ -158,8 +157,7 @@ def plot_thermocline_endmember_fractions(ompa_problems_arr,
         np.array(x.obs_df[yaxis_colname]) for x in ompa_problems_arr])
     endmember_fractions = np.concatenate([
             x.endmember_fractions for x in ompa_problems_arr], axis=0)
-    endmembernames = list(ompa_problems_arr[0].endmember_df[
-                            endmember_name_column])
+    endmembernames = ompa_problems_arr[0].endmember_names
     converted_param_names = ompa_problems_arr[0].converted_params_to_use
     if (ompa_problems_arr[0].total_oxygen_deficit is not None):
         total_oxygen_deficit = np.concatenate([x.total_oxygen_deficit
