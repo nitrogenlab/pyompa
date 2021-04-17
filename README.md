@@ -1,7 +1,7 @@
 # pyompa
 This is a python package for OMP analysis. It is currently under development and has not been formally published yet. If you are interested in using this package, please contact Professor Karen Casciotti (kcasciot [at] stanford [dot] edu).
 
-Note that this implementation has key differences from the MATLAB OMP implementation by M. Tomczak, including the imposition of a hard constraint for mass conservation, support for flexible redfield ratios, and support for soft penalties to encode prior knowledge about end-member distributions.
+Note that this implementation has key differences from the MATLAB OMP implementation by M. Tomczak; among them, this package models mass conservation with a hard constraint (i.e. it strives for a residual of 0 in the mass conservation equations), it has support for flexible redfield ratios when modeling remineralization, and it has support for soft penalties to encode prior knowledge about end-member distributions.
 
 ## Installation
 
