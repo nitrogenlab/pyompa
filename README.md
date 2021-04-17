@@ -1,6 +1,8 @@
 # pyompa
 This is a python package for OMPA analysis. It is currently under development and has not been formally published yet. If you are interested in using this package, please contact Professor Karen Casciotti (kcasciot [at] stanford [dot] edu).
 
+Note that this implementation has key differences from the standard OMPA implementation, including the imposition of a hard constraint for mass conservation, support for flexible remineralization ratios, and support for soft penalties to encode prior knowledge about end-member distributions.
+
 ## Installation
 
 pyompa is on pypi, and can be installed using the following pip command:
