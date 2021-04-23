@@ -22,7 +22,7 @@ class OMPASoln(object):
                        **kwargs):
         if (endmember_df is not None):
             self.endmember_names=list(
-                    self.endmember_df[self.endmember_name_column])
+                    endmember_df[self.endmember_name_column])
         self.endmember_df = endmember_df
         self.endmember_name_column = endmember_name_column
         self.ompa_problem = ompa_problem
