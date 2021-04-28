@@ -447,7 +447,7 @@ class OMPAProblem(object):
         if (self.standardize_by_watertypes):
             param_mean = np.mean(endmem_mat, axis=0) 
             #if std is inf, set to 1
-            param_std = np.std(endmem_mat, axis=0)
+            param_std = np.std(endmem_mat, axis=0, ddof=1)
             mass_idxs = np.nonzero(1.0*(param_std==0))[0]
             param_std[mass_idxs] = 1.0
             #Assume that the entry with std of 0 is also the one that has
@@ -481,10 +481,12 @@ class OMPAProblem(object):
         orig_A = A
         orig_b = b
         if (self.standardize_by_watertypes):
-            A = A-param_mean[None,:]
+            A[:len(endmem_mat)] = A[:len(endmem_mat)] - param_mean[None,:]
             b = b-param_mean[None,:]
         A = A*weighting[None,:]
         b = b*weighting[None,:]
+
+        print("Matrix A:")
 
         if (smoothness_lambda is not None):
             pairs_matrix = make_pairs_matrix(
