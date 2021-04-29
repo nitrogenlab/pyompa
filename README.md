@@ -146,3 +146,13 @@ As of version v0.3.0.3-alpha, you can supply multiple configuration files to pyo
 
 ## Running from a colab notebook/in python
 See https://github.com/nitrogenlab/GP15_watermassanalysis/blob/main/config_files_demo.ipynb for an example.
+
+## Frequently Asked Questions
+
+# How do you handle mass conservation?
+
+One of the improvements that this implementation has over the original OMP formulation is that conservation if mass is implemented as a *hard constraint*, which means that the solver looks for a solution where mass conservation is satisfied with a residual of 0. The solution this produces is analogous to what would happen if (in theory) one were to set conservation of mass to have a weight of infinity in the original MATLAB OMP formulation. There are strong theoretical reasons to prefer a hard constraint for conservation of mass, which will be elaborated on in our upcoming paper; the gist is that if conservation of mass is allowed to be violated, it can be used by the OMP solver to “hide” large residuals in other variables, thereby producing poor-quality solutions. This is why we use the hard constraint, which disallows violation of conservation of mass. Subsequent versions of pyompa will have an option to disallow this to replicate the original MATLAB OMP behaviour.
+
+# Do you normalize/standardize your water type matrix?
+
+There are two aspects to the normalization/standardization that is applied in the original MATLAB OMP formulation. The first is to subtract the mean parameter value across the water types, and the other is to divide by the standard deviation of the parameter value across the water types. We can show that if the mass conservation equation is satisfied exactly (as is ensured in our implementation, due to the hard constraint), then the mean normalization does not change the ideal solution. As for rescaling by the standard deviation: mathematically, this is equivalent to changing the user-specified parameter weights such that they get divided by the standard deviation. We have decided not to do this rescaling in this pyompa implementation because it can make it harder to figure out what the ultimate parameter weights end up being, and it also makes the ultimate parameter weights dependent on the water type matrix in a way that the user might not realize. If you want to recapitulate the effect of this rescaling from the original MATLAB OMP implementation, you can manually adjust the parameter weights by dividing them by the standard deviation of the parameter value across the water types.
