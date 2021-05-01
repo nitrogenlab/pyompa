@@ -478,7 +478,7 @@ class OMPAProblem(object):
             print("effective weighting:", weighting/param_std)
         print("Conversion ratios:\n"
               +str(groupname_to_conversionratiosdict))
-        orig_A = A
+        orig_A = A.copy()
         orig_b = b
         if (self.standardize_by_watertypes):
             A[:len(endmem_mat)] = A[:len(endmem_mat)] - param_mean[None,:]
