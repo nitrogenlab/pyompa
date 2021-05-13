@@ -94,8 +94,8 @@ def plot_endmember_fractions(xaxis_vals, xaxis_label, yaxis_vals, yaxis_label,
 def plot_ompasoln_endmember_fractions(ompa_soln, xaxis_colname,
                                       yaxis_colname, flip_y=True):
 
-    endmembername_to_indices = ompa_soln.endmembername_to_indices  
-    endmember_names = endmembername_to_indices.keys()
+    endmembername_to_indices = ompa_soln.endmembername_to_indices
+    endmember_names = list(endmembername_to_indices.keys())
     remapped_endmember_fractions = collapse_endmembers_by_idxmapping(
         endmember_fractions=ompa_soln.endmember_fractions,
         endmembername_to_indices=endmembername_to_indices) 

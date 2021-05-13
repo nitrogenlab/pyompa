@@ -29,7 +29,7 @@ def get_endmember_idx_mapping(endmember_names):
     endmembername_to_indices = OrderedDict()
 
     for idx,endmember_name in enumerate(endmember_names):
-        if "_subtype" in endmember_name:
+        if "_" in endmember_name:
             endmembername_core = endmember_name.split("_subtype")[0]
         else:
             endmembername_core = endmember_name
