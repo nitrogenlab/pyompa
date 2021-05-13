@@ -436,7 +436,7 @@ class OMPAProblem(object):
                  +str(list(endmember_df.columns)))
 
         endmember_names = list(endmember_df[endmember_name_column])
-        assert len(set(endmember_names))==len(endmembernames),(
+        assert len(set(endmember_names))==len(endmember_names),(
             "There should not be duplicate endmember names (denote subtypes"
             +"with _subtype). The endmember names are: "+str(endmember_names))
 
