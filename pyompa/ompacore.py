@@ -439,6 +439,9 @@ class OMPAProblem(object):
         assert len(set(endmember_names))==len(endmember_names),(
             "There should not be duplicate endmember names (denote subtypes"
             +"with _subtype). The endmember names are: "+str(endmember_names))
+        endmember_idx_mapping = get_endmember_idx_mapping(
+            endmember_names=endmember_names)
+        print("Endmember-idx mapping is\n",endmember_idx_mapping)
 
         weighting = self.get_param_weighting() 
         smoothness_lambda = self.smoothness_lambda
