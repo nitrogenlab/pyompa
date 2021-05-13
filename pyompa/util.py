@@ -1,5 +1,6 @@
 from __future__ import division, print_function
 from collections import OrderedDict
+import numpy as np
 
 
 def assert_compatible_keys(the_dict, allowed, errorprefix):
