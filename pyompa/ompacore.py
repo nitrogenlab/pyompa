@@ -7,6 +7,7 @@ import scipy.spatial
 import scipy.optimize
 from collections import OrderedDict, defaultdict
 import itertools
+from .util import get_endmember_idx_mapping
 
 
 class OMPASoln(object):
@@ -40,6 +41,16 @@ class OMPASoln(object):
                 ompa_problem.endmembername_to_usagepenalty
         self.nullspace_A = nullspace_A
         self.__dict__.update(kwargs)
+
+    @property
+    def endmember_names(self):
+        return self._endmember_names
+
+    @endmember_names.setter
+    def endmember_names(self, value):
+        self._endmember_names = value
+        self.endmembername_to_indices = get_endmember_idx_mapping(
+            endmember_names=self.endmember_names) 
 
     def core_quantify_ambiguity_via_nullspace(self, obj_weights, verbose=False):
         #obj_weights should be an array of weights that define the objective
@@ -425,6 +436,9 @@ class OMPAProblem(object):
                  +str(list(endmember_df.columns)))
 
         endmember_names = list(endmember_df[endmember_name_column])
+        assert len(set(endmember_names))==len(endmembernames),(
+            "There should not be duplicate endmember names (denote subtypes"
+            +"with _subtype). The endmember names are: "+str(endmember_names))
 
         weighting = self.get_param_weighting() 
         smoothness_lambda = self.smoothness_lambda

@@ -18,6 +18,39 @@ def assert_has_keys(the_dict, required, errorprefix):
             +str(the_dict.keys()))
 
 
+def get_endmember_idx_mapping(endmember_names):
+    """
+    Get a mapping from endmember name to indexes with all the subtypes
+     corresponding to that endmember. The subtypes should be denoted with
+     _subtype.
+    """
+    endmembername_to_indices = OrderedDict()
+
+    for idx,endmember_name in enumerate(endmember_names):
+        if "_subtype" in endmember_name:
+            endmembername_core = endmember_name.split("_subtype")[0]
+        else:
+            endmembername_core = endmember_name
+        if endmembername_core not endmembername_to_indices:
+            endmembername_to_indices[endmembername_core] = [] 
+        endmembername_to_indices[endmembername_core].append(idx) 
+
+    return endmembername_to_indices 
+
+
+def collapse_endmembers_by_idxmapping(endmember_fractions,
+                                      endmembername_to_indices):
+    endmember_names = endmembername_to_indices.keys()
+    remapped_endmember_fractions = np.zeros(
+        (len(endmember_fractions), len(endmember_names))) 
+    for remapped_idx,endmember_name in enumerate(endmember_names):
+        idxs = endmembername_to_indices[endmember_name]:
+        for idx in idxs:
+            remapped_endmember_fractions[:,remapped_idx] +=\
+                endmember_fractions[:,idx] 
+    return remapped_endmember_fractions
+
+
 #import gsw
 #
 #
