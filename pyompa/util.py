@@ -30,7 +30,7 @@ def get_endmember_idx_mapping(endmember_names):
 
     for idx,endmember_name in enumerate(endmember_names):
         if "_" in endmember_name:
-            endmembername_core = endmember_name.split("_subtype")[0]
+            endmembername_core = endmember_name.split("_")[0]
         else:
             endmembername_core = endmember_name
         if endmembername_core not in endmembername_to_indices:
