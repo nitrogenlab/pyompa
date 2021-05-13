@@ -44,7 +44,7 @@ def collapse_endmembers_by_idxmapping(endmember_fractions,
     remapped_endmember_fractions = np.zeros(
         (len(endmember_fractions), len(endmember_names))) 
     for remapped_idx,endmember_name in enumerate(endmember_names):
-        idxs = endmembername_to_indices[endmember_name]:
+        idxs = endmembername_to_indices[endmember_name]
         for idx in idxs:
             remapped_endmember_fractions[:,remapped_idx] +=\
                 endmember_fractions[:,idx] 
