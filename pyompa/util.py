@@ -31,7 +31,7 @@ def get_endmember_idx_mapping(endmember_names):
             endmembername_core = endmember_name.split("_subtype")[0]
         else:
             endmembername_core = endmember_name
-        if endmembername_core not endmembername_to_indices:
+        if endmembername_core not in endmembername_to_indices:
             endmembername_to_indices[endmembername_core] = [] 
         endmembername_to_indices[endmembername_core].append(idx) 
 
