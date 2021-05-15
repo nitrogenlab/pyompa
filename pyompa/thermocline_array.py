@@ -79,11 +79,12 @@ class ThermoclineArraySoln(object):
             orig_cols_to_include += param_names
 
         for orig_col in orig_cols_to_include:
-            assert orig_col in self.obs_df, (
+            assert orig_col in self.thermocline_ompa_results[0].obs_df, (
              "Export settings asked that "+orig_col+" be copied from the"
              +" original observations data frame into the output, but"
              +" no such column header was present in the observations data"
-             +" frame; the column headers are: "+str(self.obs_df.columns)) 
+             +" frame; the column headers are: "
+             +str(self.thermocline_ompa_results[0].columns)) 
             col_vals = np.concatenate([np.array(x.obs_df[orig_col])
                         for x in self.thermocline_ompa_results])
             toexport_df_dict[orig_col] = col_vals
