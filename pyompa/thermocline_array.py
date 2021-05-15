@@ -212,7 +212,7 @@ class ThermoclineArrayOMPAProblem(object):
 
         self.thermocline_ompa_results = thermocline_ompa_results
 
-      	return ThermoclineArraySoln(
+        return ThermoclineArraySoln(
                  endmemname_to_df=endmemname_to_df,
                  endmember_name_column=endmember_name_column,
                  endmemnames_to_use=endmemnames_to_use,
