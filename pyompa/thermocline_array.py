@@ -98,7 +98,9 @@ class ThermoclineArraySoln(object):
                 toexport_df_dict[param_name+"_resid"] = (
                     param_residuals[:,param_idx])
 
-        endmembernames=list(self.endmember_df[self.endmember_name_column])
+        endmembernames=list(self.
+         thermocline_ompa_results[0].endmember_df[
+         self.thermocline_ompa_results[0].endmember_name_column])
         if (export_endmember_fracs):
             endmember_fractions = np.concatenate([
                 x.endmember_fractions
