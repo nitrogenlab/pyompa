@@ -62,15 +62,18 @@ class ThermoclineArraySoln(object):
                               export_residuals=True,
                               export_endmember_fracs=True,
                               export_oxygen_deficit=True,
-                              export_conversion_ratios=True,
-                              export_endmember_usage_penalties=False):
+                              export_conversion_ratios=True):
   
         print("writing to",csv_output_name)	
       
         toexport_df_dict = OrderedDict()
 
-        param_names = (self.thermocline_ompa_problem[0].conserved_params_to_use
-                     +self.thermocline_ompa_problem[0].converted_params_to_use)
+        conserved_params_to_use = (
+            self.thermocline_ompa_results[0].conserved_params_to_use)
+        converted_params_to_use = (
+            self.thermocline_ompa_results[0].converted_params_to_use)
+        param_names = conserved_params_to_use + converted_params_to_use 
+
         if (export_orig_param_vals):
             orig_cols_to_include += param_names
 
@@ -80,43 +83,49 @@ class ThermoclineArraySoln(object):
              +" original observations data frame into the output, but"
              +" no such column header was present in the observations data"
              +" frame; the column headers are: "+str(self.obs_df.columns)) 
-            toexport_df_dict[orig_col] = self.obs_df[orig_col]
+            col_vals = np.concatenate([np.array(x.obs_df[orig_col])
+                        for x in self.thermocline_ompa_results])
+            toexport_df_dict[orig_col] = col_vals
 
         if (export_residuals):
+             param_residuals = np.concatenate([
+                x.endmember_fractions
+                for x in self.thermocline_ompa_results], axis=0)
              for param_idx,param_name in enumerate(
-                self.conserved_params_to_use+self.converted_params_to_use):
-                toexport_df_dict[param_name+"_resid"] =\
-                    self.param_residuals[:,param_idx] 
+                conserved_params_to_use+converted_params_to_use):
+                toexport_df_dict[param_name+"_resid"] = (
+                    param_residuals[:,param_idx])
 
         endmembernames=list(self.endmember_df[self.endmember_name_column])
         if (export_endmember_fracs):
+            endmember_fractions = np.concatenate([
+                x.endmember_fractions
+                for x in self.thermocline_ompa_results], axis=0)
             for endmember_idx in range(len(endmembernames)):
                 toexport_df_dict[endmembernames[endmember_idx]+"_frac"] =\
-                    self.endmember_fractions[:,endmember_idx]
+                    endmember_fractions[:,endmember_idx]
 
         if (export_oxygen_deficit and
-            (self.total_oxygen_deficit is not None)):
-            toexport_df_dict["total_oxygen_deficit"] = self.total_oxygen_deficit
+            ((self.thermocline_ompa_results[0]
+                  .total_oxygen_deficit) is not None)):
+            total_oxygen_deficit = np.concatenate([x.total_oxygen_deficit
+                               for x in self.thermocline_ompa_results], axis=0)
+            toexport_df_dict["total_oxygen_deficit"] = total_oxygen_deficit
 
         if (export_conversion_ratios and
-            (self.total_oxygen_deficit is not None)): 
-            for converted_param_idx in range(len(self.converted_params_to_use)):
-                param_name = self.converted_params_to_use[converted_param_idx]
+            ((self.thermocline_ompa_results[0]
+                  .total_oxygen_deficit) is not None)): 
+            for converted_param_idx in range(
+                                        len(converted_params_to_use)):
+                param_name = converted_params_to_use[converted_param_idx]
+                effective_conversion_ratios = np.concatenate([
+                    x.effective_conversion_ratios
+                    for x in self.thermocline_ompa_results], axis=0)
                 toexport_df_dict["oxygen_to_"+param_name+"_ratio"] =\
-                    1.0/self.effective_conversion_ratios[:,converted_param_idx]
+                    1.0/effective_conversion_ratios[:,converted_param_idx]
 
-        if (export_endmember_usage_penalties):
-            for endmembername in endmembernames:
-                if (endmembername in\
-                    self.ompa_problem.endmembername_to_usagepenalty): 
-                    endmember_usagepenalty = (self.ompa_problem.
-                                  endmembername_to_usagepenalty[endmembername])
-                    toexport_df_dict[endmembername+"_penalty"] =\
-                        endmember_usagepenalty
-        
         toexport_df = pd.DataFrame(toexport_df_dict)
         toexport_df.to_csv(csv_output_name, index=False)
-
 
     def __len__(self):
         return len(self.thermocline_ompa_results)
