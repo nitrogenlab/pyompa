@@ -91,7 +91,7 @@ class ThermoclineArraySoln(object):
 
         if (export_residuals):
              param_residuals = np.concatenate([
-                x.endmember_fractions
+                x.param_residuals
                 for x in self.thermocline_ompa_results], axis=0)
              for param_idx,param_name in enumerate(
                 conserved_params_to_use+converted_params_to_use):
