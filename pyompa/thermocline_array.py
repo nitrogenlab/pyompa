@@ -2,6 +2,7 @@ from __future__ import division, print_function
 from .ompacore import OMPAProblem
 import numpy as np
 import pandas as pd
+from collections import OrderedDict
 
 
 def get_endmember_df_for_range(endmemnames_to_use,
