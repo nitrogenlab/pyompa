@@ -35,7 +35,7 @@ def get_endmember_df_for_range(endmemnames_to_use,
          +":\n"+str(correct_rows_for_endmemname))
         #Store the row from this end member dataframe in
         # the list of correct rows
-        correct_rows.apend(correct_rows_for_endmemname)  
+        correct_rows.append(correct_rows_for_endmemname)  
     #Now we just have to concatenate 'correct_rows' into a single
     # pandas DataFrame; pandas should take care of matching up the
     # columns correctly.
