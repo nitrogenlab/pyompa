@@ -92,20 +92,25 @@ def plot_endmember_fractions(xaxis_vals, xaxis_label, yaxis_vals, yaxis_label,
 
 
 def plot_ompasoln_endmember_fractions(ompa_soln, xaxis_colname,
-                                      yaxis_colname, flip_y=True):
+                                      yaxis_colname, flip_y=True,
+                                      group_endmembers=True):
 
-    endmembername_to_indices = ompa_soln.endmembername_to_indices
-    endmember_names = list(endmembername_to_indices.keys())
-    remapped_endmember_fractions = collapse_endmembers_by_idxmapping(
-        endmember_fractions=ompa_soln.endmember_fractions,
-        endmembername_to_indices=endmembername_to_indices) 
+    if (group_endmembers):
+        endmembername_to_indices = ompa_soln.endmembername_to_indices
+        endmember_names = list(endmembername_to_indices.keys())
+        endmember_fractions = collapse_endmembers_by_idxmapping(
+            endmember_fractions=ompa_soln.endmember_fractions,
+            endmembername_to_indices=endmembername_to_indices) 
+    else:
+        endmember_names = ompa_soln.endmember_names 
+        endmember_fractions = ompa_soln.endmember_fractions
 
     plot_endmember_fractions(
         xaxis_vals=ompa_soln.obs_df[xaxis_colname],
         xaxis_label=xaxis_colname,
         yaxis_vals=ompa_soln.obs_df[yaxis_colname],
         yaxis_label=yaxis_colname,
-        endmember_fractions=remapped_endmember_fractions,
+        endmember_fractions=endmember_fractions,
         endmembernames=endmember_names,
         groupname_to_totalconvertedvariable=
          ompa_soln.groupname_to_totalconvertedvariable,

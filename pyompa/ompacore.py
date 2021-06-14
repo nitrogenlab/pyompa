@@ -8,6 +8,7 @@ import scipy.optimize
 from collections import OrderedDict, defaultdict
 import itertools
 from .util import get_endmember_idx_mapping
+import sys
 
 
 class OMPASoln(object):
@@ -60,7 +61,7 @@ class OMPASoln(object):
         #For each soln s (length "num_endmem + num_conv_ratios"), the
         # relevant linear programming constraints are
         #For rows pertaining to end member fractions:
-        # "s + N(A) @ v >= 0" and "s + N(A) @ v <= 1" for endmember usgae
+        # "s + N(A) @ v >= 0" for endmember usgae
         # "s + N(A) @ v >= 0" OR "s + N(A) v <= 0" for oxygen usage 
         # (the 'or' means our solution space will basically contain two
         #  polytopes that may be disconnected (if there are multiple
@@ -100,38 +101,42 @@ class OMPASoln(object):
 
         #For each observation, we can solve the linear program
         new_perobs_endmember_fractions = []
-        new_perobs_oxygen_deficits = []
+        new_perobs_converted_vars = []
         perobs_obj = []
         for obs_idx in range(len(self.endmember_fractions)):
             endmem_fracs = self.endmember_fractions[obs_idx] 
             assert len(endmem_fracs)==len(endmember_names)
-            oxy_def = self.oxygen_deficits[obs_idx] 
+            converted_vars = self.converted_variables[obs_idx] 
             usagepenalty = endmember_usagepenalty[obs_idx]
 
             assert len(usagepenalty) == len(endmem_fracs)
-            assert ((len(endmem_fracs) + len(oxy_def))
+            assert ((len(endmem_fracs) + len(converted_vars))
                     == self.nullspace_A.shape[0])
             assert len(obj_weights) == self.nullspace_A.shape[0]
 
-            def compute_soln(oxy_def_sign):
+            def compute_soln(converted_vars_signs):
 
                 c = (obj_weights @ self.nullspace_A)
 
                 A_ub = np.concatenate([
-                        self.nullspace_A[:len(endmem_fracs)],
-                        -(self.nullspace_A[:len(endmem_fracs)]),
-                        -1*oxy_def_sign*self.nullspace_A[len(endmem_fracs):]
-                    ], axis=0)
-                b_ub = np.concatenate([ 1-endmem_fracs,
-                                        endmem_fracs,
-                                        np.zeros_like(oxy_def)], axis=0) 
+                   -(self.nullspace_A[:len(endmem_fracs)]),
+                   -(converted_vars_signs[:,None]
+                     *self.nullspace_A[len(endmem_fracs):]),
+                   usagepenalty[None,:]@self.nullspace_A[:len(endmem_fracs)]
+                  ], axis=0)
+                b_ub = np.concatenate([
+                            endmem_fracs,
+                            converted_vars*converted_vars_signs,
+                            np.sum(endmem_fracs*usagepenalty)
+                        ], axis=0) 
 
                 A_eq = (usagepenalty[None,:] @
                         self.nullspace_A[:len(endmem_fracs)])
                 b_eq = 0
 
                 res = scipy.optimize.linprog(c=c, A_ub=A_ub, b_ub=b_ub,
-                                             A_eq=A_eq, b_eq=b_eq) 
+                                             #A_eq=A_eq, b_eq=b_eq
+                                            ) 
 
                 if (res.success == False):
                     fun = np.inf
@@ -142,43 +147,44 @@ class OMPASoln(object):
 
                 endmem_frac_deltas = self.nullspace_A[:len(endmem_fracs)] @ v
                 new_endmem_fracs = (endmem_fracs + endmem_frac_deltas)
-                new_oxy_def = (oxy_def
+                new_converted_vars = (converted_vars
                   + self.nullspace_A[len(endmem_fracs):] @ v)
 
-                return ((new_endmem_fracs, new_oxy_def),
+                return ((new_endmem_fracs, new_converted_vars),
                         fun) #soln and optimal value
 
             if (self.nullspace_A.shape[1] > 0):
-                posodsign_soln, posodsign_obj = compute_soln(1) 
-                negodsign_soln, negodsign_obj = compute_soln(-1) 
-                pos_wins = (posodsign_obj < negodsign_obj)
-                if (pos_wins):
-                    (new_endmem_fracs, new_oxy_def) = posodsign_soln
-                else:
-                    (new_endmem_fracs, new_oxy_def) = negodsign_soln
-
+                signcombos_to_try =\
+                    self.ompa_problem.get_convertedvariable_signcombos_to_try()
+                solns = []
+                objs = []
+                for signcombo in signcombos_to_try:
+                    soln, obj = compute_soln(signcombo)
+                    solns.append(soln)
+                    objs.append(obj)
+                new_endmem_fracs, new_converted_vars = solns[np.argmin(objs)]
                 assert new_endmem_fracs is not None
                 assert np.abs(np.sum(new_endmem_fracs) - 1) < 1e-7
                 #fix any numerical issues with soln
                 new_endmem_fracs = np.maximum(new_endmem_fracs, 0)
                 new_endmem_fracs = new_endmem_fracs/(np.sum(new_endmem_fracs))
-                if (pos_wins):
-                    new_oxy_def = np.maximum(new_oxy_def, 0)
-                else:
-                    new_oxy_def = np.minimum(new_oxy_def, 0)
+
+                best_sign_combo = signcombos_to_try[np.argmin(objs)]
+                new_converted_vars = best_sign_combo*np.maximum(
+                                     (best_sign_combo*new_converted_vars), 0.0)
             else:
                 new_endmem_fracs = endmem_fracs
-                new_oxy_def = oxy_def 
+                new_converted_vars = converted_vars
 
             obj = obj_weights@np.concatenate(
-                   [new_endmem_fracs, new_oxy_def], axis=0) 
+                   [new_endmem_fracs, new_converted_vars], axis=0) 
 
             new_perobs_endmember_fractions.append(new_endmem_fracs)
-            new_perobs_oxygen_deficits.append(new_oxy_def)
+            new_perobs_converted_vars.append(new_converted_vars)
             perobs_obj.append(obj) 
 
         return (np.array(new_perobs_endmember_fractions),
-                np.array(new_perobs_oxygen_deficits),
+                np.array(new_perobs_converted_vars),
                 np.array(perobs_obj))
 
     def export_to_csv(self, csv_output_name,
@@ -428,7 +434,7 @@ class OMPAProblem(object):
             assert np.allclose(mat.dot(ns), 0)
         return ns
 
-    def solve(self, endmember_df, endmember_name_column):
+    def solve(self, endmember_df, endmember_name_column, batch_size=None):
 
         for param_name in self.param_names:
             assert param_name in endmember_df,\
@@ -486,6 +492,8 @@ class OMPAProblem(object):
 
         #prepare b
         b = self.get_b()
+        if (batch_size is None):
+            batch_size = len(b)
         
         #Rescale by param weighting
         print("params to use:", self.param_names)        
@@ -519,14 +527,16 @@ class OMPAProblem(object):
             perobs_weighted_resid_sq_for_signcombo = []
             for signcombo in signcombos_to_try:
                 print("Trying convertedvariable sign constraint:",signcombo)
-                _, _, _, perobs_weighted_resid_sq_positiveconversionsign, _ =\
-                  self.core_solve(
+                _, _, _, perobs_weighted_resid_sq_positiveconversionsign,_ =\
+                  self.batch_core_solve(
                     A=A, b=b,
                     num_converted_variables=self.num_converted_variables,
                     pairs_matrix=None,
                     endmember_usagepenalty=endmember_usagepenalty,
-                    conversion_sign_constraints=signcombo[None,:],
-                    smoothness_lambda=None)
+                    conversion_sign_constraints=np.tile(
+                        signcombo[None,:], (len(b),1)),
+                    smoothness_lambda=None,
+                    batch_size=batch_size)
                 perobs_weighted_resid_sq_for_signcombo.append(
                     perobs_weighted_resid_sq_positiveconversionsign)
             #determine which conversion sign is best for each example
@@ -540,13 +550,14 @@ class OMPAProblem(object):
         
         (x, endmember_fractions,
          converted_variables,
-         perobs_weighted_resid_sq, prob) = self.core_solve(
+         perobs_weighted_resid_sq, status) = self.batch_core_solve(
             A=A, b=b,
             num_converted_variables=self.num_converted_variables,
             pairs_matrix=pairs_matrix,
             endmember_usagepenalty=endmember_usagepenalty,
             conversion_sign_constraints=best_sign_combos,
-            smoothness_lambda=smoothness_lambda)
+            smoothness_lambda=smoothness_lambda,
+            batch_size=batch_size)
         
         if (endmember_fractions is not None):
             print("objective:", np.sum(perobs_weighted_resid_sq))
@@ -606,7 +617,7 @@ class OMPAProblem(object):
         return OMPASoln(endmember_df=endmember_df, ompa_problem=self,
                   endmember_names=endmember_names,
                   endmember_name_column=endmember_name_column,
-                  status=prob.status,
+                  status=status,
                   endmember_fractions=endmember_fractions,
                   converted_variables=converted_variables,
                   resid_wsumsq=np.sum(perobs_weighted_resid_sq),
@@ -616,6 +627,52 @@ class OMPAProblem(object):
                   groupname_to_effectiveconversionratios=
                     groupname_to_effectiveconversionratios,
                   nullspace_A=nullspace_A)
+
+    def batch_core_solve(self, A, b, num_converted_variables,
+                   pairs_matrix, endmember_usagepenalty,
+                   conversion_sign_constraints, smoothness_lambda,
+                   batch_size,
+                   verbose=True):
+        assert smoothness_lambda==0 or smoothness_lambda is None,(
+            "Batch solving doesn't work for yet for nonzero/non-null"
+            "smoothness lambda")
+
+        fixed_x = []
+        endmember_fractions = []
+        converted_variables = []
+        perobs_weighted_resid_sq = []
+
+        status = "not_infeasible"
+
+        for i in range(0, len(b), batch_size):
+            print("On example",i,"to",i+batch_size,"out of",len(b))
+            sys.stdout.flush()
+            (fixed_x_batch, endmember_fractions_batch,
+             converted_variables_batch,
+             perobs_weighted_resid_sq_batch, prob) = self.core_solve(
+                A=A, b=b[i:i+batch_size],
+                num_converted_variables=num_converted_variables,
+                pairs_matrix=None,
+                endmember_usagepenalty=endmember_usagepenalty[i:i+batch_size],
+                conversion_sign_constraints=
+                 conversion_sign_constraints[i:i+batch_size],
+                smoothness_lambda=None, verbose=verbose)
+            fixed_x.append(fixed_x_batch)
+            endmember_fractions.append(endmember_fractions_batch)            
+            converted_variables.append(converted_variables_batch)
+            perobs_weighted_resid_sq.append(perobs_weighted_resid_sq_batch)
+            
+            if prob.status=="infeasible":
+                status = "infeasible"
+
+        fixed_x = np.concatenate(fixed_x, axis=0)
+        endmember_fractions = np.concatenate(endmember_fractions, axis=0)
+        converted_variables = np.concatenate(converted_variables, axis=0)
+        perobs_weighted_resid_sq = np.concatenate(
+                                    perobs_weighted_resid_sq, axis=0)
+
+        return (fixed_x, endmember_fractions, converted_variables,
+                perobs_weighted_resid_sq, status)
 
     def core_solve(self, A, b, num_converted_variables,
                    pairs_matrix, endmember_usagepenalty,
@@ -654,9 +711,7 @@ class OMPAProblem(object):
         if (len(self.convertedparam_groups) > 0):
             constraints.append(
               cp.atoms.affine.binary_operators.multiply(
-                  (conversion_sign_constraints if
-                   len(conversion_sign_constraints)==len(b) else
-                   np.tile(conversion_sign_constraints, (len(b),1))),
+                  conversion_sign_constraints,
                   x[:,num_endmembers:]) >= 0)
 
         prob = cp.Problem(obj, constraints)
