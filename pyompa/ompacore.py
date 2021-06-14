@@ -86,7 +86,7 @@ class OMPASoln(object):
         perobs_obj = []
         for obs_idx in range(len(self.endmember_fractions)):
             obs_orig_endmem_fracs = self.endmember_fractions[obs_idx] 
-            assert len(endmem_fracs)==len(endmember_names)
+            assert num_endmembers==len(endmember_names)
             if (num_converted_variables > 0):
                 obs_orig_converted_vars = self.converted_variables[obs_idx] 
             obs_usagepenalty = endmember_usagepenalty[obs_idx]
@@ -96,7 +96,7 @@ class OMPASoln(object):
             if (num_converted_variables > 0):
                 obs_orig_pred += obs_orig_converted_vars@conversion_ratio_rows
 
-            obs_orig_resid = obs_orig_pred - orig_b 
+            obs_orig_resid = obs_orig_pred - obs_b 
             obs_upper_resids = np.maximum(max_resids, obs_orig_resid)
             obs_lower_resids = np.minimum(-max_resids, obs_orig_resid)
 
@@ -113,26 +113,26 @@ class OMPASoln(object):
                   #converted variables sign constraints
                   + ([-np.concatenate([
                       np.zeros((num_converted_variables, num_endmembers)),
-                      np.eye(converted_vars_signs)],
+                      np.diag(converted_vars_signs)],
                      axis=1)]
                    if num_converted_variables > 0 else [])
                   #usage penalty capped at original
                   + [np.concatenate([obs_usagepenalty,
                                    np.zeros(num_converted_variables)])[None,:]]
                   #positive residual cap, negative residual cap
-                  + [orig_A.T, -orig_A.T]
+                  + [omp_A.T, -omp_A.T]
                   #negative residual cap
                   )
                 b_ub = np.concatenate([
-                         #non-negativity and convvar sign constrains
-                         np.zeros(num_endmembers+num_converted_variables),
-                         #usage penalty - capped at original
-                         np.sum(obs_orig_endmem_fracs*obs_usagepenalty),
-                         #positive residual cap
-                         orig_b + obs_upper_resids,
-                         #negative residual cap 
-                         -(orig_b + obs_lower_resids)
-                        ], axis=0) 
+                    #non-negativity and convvar sign constrains
+                    np.zeros(num_endmembers+num_converted_variables),
+                    #usage penalty - capped at original
+                    np.array([np.sum(obs_orig_endmem_fracs*obs_usagepenalty)]),
+                    #positive residual cap
+                    obs_b + obs_upper_resids,
+                    #negative residual cap 
+                    -(obs_b + obs_lower_resids)
+                   ], axis=0) 
 
                 #enforcing that the end-member fractions sum to 1
                 A_eq = np.concatenate([
@@ -144,15 +144,13 @@ class OMPASoln(object):
                            c=obj_weights, A_ub=A_ub, b_ub=b_ub,
                            A_eq=A_eq, b_eq=b_eq) 
 
-                if (res.success == False):
+                if (result.success == False):
                     fun = np.inf
                 else:
-                    fun = res.fun
+                    fun = result.fun
 
-                v = res.x
-
-                new_endmem_fracs = res.x[:num_endmembers]
-                new_converted_vars = res.x[num_endmembers:] 
+                new_endmem_fracs = result.x[:num_endmembers]
+                new_converted_vars = result.x[num_endmembers:] 
 
                 return ((new_endmem_fracs, new_converted_vars),
                         fun) #soln and optimal value
@@ -167,7 +165,8 @@ class OMPASoln(object):
                 objs.append(obj)
             new_endmem_fracs, new_converted_vars = solns[np.argmin(objs)]
             assert new_endmem_fracs is not None
-            assert np.abs(np.sum(new_endmem_fracs) - 1) < 1e-7
+            assert np.abs(np.sum(new_endmem_fracs) - 1) < 1e-6,\
+                np.sum(new_endmem_fracs) 
 
             #fix any numerical issues with soln
             new_endmem_fracs = np.maximum(new_endmem_fracs, 0)
