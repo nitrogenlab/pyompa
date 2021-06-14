@@ -53,6 +53,144 @@ class OMPASoln(object):
         self.endmembername_to_indices = get_endmember_idx_mapping(
             endmember_names=self.endmember_names) 
 
+    def core_quantify_ambiguity_via_residual_limits(self,
+        obj_weights, max_resids, verbose=False):
+
+        endmember_names = self.endmember_names
+        endmember_usagepenalty =\
+            self.ompa_problem.prep_endmember_usagepenalty_mat(endmember_names)
+
+        #Prepare A (from the original omp problem)
+        groupname_to_conversionratiosdict, conversion_ratio_rows =\
+                self.ompa_problem.get_conversion_ratio_rows_of_A()
+        num_converted_variables = len(conversion_ratio_rows)
+        num_endmembers = self.endmember_fractions.shape[1]
+        #conversion_ratio_rows = 'R'
+        endmem_mat = self.ompa_problem.get_endmem_mat(
+                            self.endmember_df) #'M'
+        if (num_converted_variables):
+            #add rows to A for the conversion ratios
+            omp_A = np.concatenate([endmem_mat, conversion_ratio_rows], axis=0)
+        else:
+            omp_A = endmem_mat
+        #prepare original b
+        omp_b = self.ompa_problem.get_b() 
+
+        #For each observation, we can solve the linear program
+        new_perobs_endmember_fractions = []
+        if (num_converted_variables > 0):
+            new_perobs_converted_vars = []
+        else:
+            new_perobs_converted_vars = None
+        new_perobs_resid = []
+        perobs_obj = []
+        for obs_idx in range(len(self.endmember_fractions)):
+            obs_orig_endmem_fracs = self.endmember_fractions[obs_idx] 
+            assert len(endmem_fracs)==len(endmember_names)
+            if (num_converted_variables > 0):
+                obs_orig_converted_vars = self.converted_variables[obs_idx] 
+            obs_usagepenalty = endmember_usagepenalty[obs_idx]
+            obs_b = omp_b[obs_idx]
+
+            obs_orig_pred = obs_orig_endmem_fracs@endmem_mat
+            if (num_converted_variables > 0):
+                obs_orig_pred += obs_orig_converted_vars@conversion_ratio_rows
+
+            obs_orig_resid = obs_orig_pred - orig_b 
+            obs_upper_resids = np.maximum(max_resids, obs_orig_resid)
+            obs_lower_resids = np.minimum(-max_resids, obs_orig_resid)
+
+            assert len(obj_weights) == omp_A.shape[0]
+
+            def compute_soln(converted_vars_signs):
+
+                A_ub = np.concatenate(
+                  #non-negativity
+                   [-np.concatenate([
+                      np.eye(num_endmembers),
+                      np.zeros((num_endmembers, num_converted_variables))],
+                     axis=1)]
+                  #converted variables sign constraints
+                  + ([-np.concatenate([
+                      np.zeros((num_converted_variables, num_endmembers)),
+                      np.eye(converted_vars_signs)],
+                     axis=1)]
+                   if num_converted_variables > 0 else [])
+                  #usage penalty capped at original
+                  + [np.concatenate([obs_usagepenalty,
+                                   np.zeros(num_converted_variables)])[None,:]]
+                  #positive residual cap, negative residual cap
+                  + [orig_A.T, -orig_A.T]
+                  #negative residual cap
+                  )
+                b_ub = np.concatenate([
+                         #non-negativity and convvar sign constrains
+                         np.zeros(num_endmembers+num_converted_variables),
+                         #usage penalty - capped at original
+                         np.sum(obs_orig_endmem_fracs*obs_usagepenalty),
+                         #positive residual cap
+                         orig_b + obs_upper_resids,
+                         #negative residual cap 
+                         -(orig_b + obs_lower_resids)
+                        ], axis=0) 
+
+                #enforcing that the end-member fractions sum to 1
+                A_eq = np.concatenate([
+                              np.ones(num_endmembers),
+                              np.zeros(num_converted_variables)])[None,:]
+                b_eq = np.array([1])
+
+                result = scipy.optimize.linprog(
+                           c=obj_weights, A_ub=A_ub, b_ub=b_ub,
+                           A_eq=A_eq, b_eq=b_eq) 
+
+                if (res.success == False):
+                    fun = np.inf
+                else:
+                    fun = res.fun
+
+                v = res.x
+
+                new_endmem_fracs = res.x[:num_endmembers]
+                new_converted_vars = res.x[num_endmembers:] 
+
+                return ((new_endmem_fracs, new_converted_vars),
+                        fun) #soln and optimal value
+
+            signcombos_to_try =\
+                self.ompa_problem.get_convertedvariable_signcombos_to_try()
+            solns = []
+            objs = []
+            for signcombo in signcombos_to_try:
+                soln, obj = compute_soln(signcombo)
+                solns.append(soln)
+                objs.append(obj)
+            new_endmem_fracs, new_converted_vars = solns[np.argmin(objs)]
+            assert new_endmem_fracs is not None
+            assert np.abs(np.sum(new_endmem_fracs) - 1) < 1e-7
+
+            #fix any numerical issues with soln
+            new_endmem_fracs = np.maximum(new_endmem_fracs, 0)
+            new_endmem_fracs = new_endmem_fracs/(np.sum(new_endmem_fracs))
+            best_sign_combo = signcombos_to_try[np.argmin(objs)]
+            new_converted_vars = best_sign_combo*np.maximum(
+                                 (best_sign_combo*new_converted_vars), 0.0)
+            new_vars_soln = np.concatenate([new_endmem_fracs,
+                                        new_converted_vars], axis=0)
+            obj = obj_weights@new_vars_soln 
+            new_preds = new_vars_soln@omp_A
+            new_resid = new_preds - obs_b
+            new_perobs_resid.append(new_resid)
+
+            new_perobs_endmember_fractions.append(new_endmem_fracs)
+            new_perobs_converted_vars.append(new_converted_vars)
+            perobs_obj.append(obj) 
+
+        return (np.array(new_perobs_endmember_fractions),
+                np.array(new_perobs_converted_vars),
+                np.array(perobs_obj),
+                np.array(new_perobs_resid))
+
     def core_quantify_ambiguity_via_nullspace(self, obj_weights, verbose=False):
         #obj_weights should be an array of weights that define the objective
         # of the linear program, in the form "o @ (s + N(A) @ v)" (where
@@ -596,12 +734,6 @@ class OMPAProblem(object):
                 effective_conversion_ratios = OrderedDict()
                 conversion_ratios_dict = (
                   groupname_to_conversionratiosdict[groupname])
-                #Reminder: conversion_ratios has dims of
-                # num_converted_variables x num_converted_params
-                #oxygen_usage_proportions has dims of
-                # num_examples X num_converted_variables
-                #Note: should disregard conversion ratios computed when oxygen
-                # usage is very small.
                 effective_conversion_ratios = OrderedDict([
                     (relevant_param_name,
                      convarusage_proportions@conversion_ratio)
@@ -639,7 +771,10 @@ class OMPAProblem(object):
 
         fixed_x = []
         endmember_fractions = []
-        converted_variables = []
+        if (num_converted_variables > 0):
+            converted_variables = []
+        else:
+            converted_variables = None
         perobs_weighted_resid_sq = []
 
         status = "not_infeasible"
@@ -659,7 +794,8 @@ class OMPAProblem(object):
                 smoothness_lambda=None, verbose=verbose)
             fixed_x.append(fixed_x_batch)
             endmember_fractions.append(endmember_fractions_batch)            
-            converted_variables.append(converted_variables_batch)
+            if (num_converted_variables > 0):
+                converted_variables.append(converted_variables_batch)
             perobs_weighted_resid_sq.append(perobs_weighted_resid_sq_batch)
             
             if prob.status=="infeasible":
@@ -667,7 +803,8 @@ class OMPAProblem(object):
 
         fixed_x = np.concatenate(fixed_x, axis=0)
         endmember_fractions = np.concatenate(endmember_fractions, axis=0)
-        converted_variables = np.concatenate(converted_variables, axis=0)
+        if (num_converted_variables > 0):
+            converted_variables = np.concatenate(converted_variables, axis=0)
         perobs_weighted_resid_sq = np.concatenate(
                                     perobs_weighted_resid_sq, axis=0)
 
