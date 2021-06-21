@@ -104,28 +104,21 @@ class OMPASoln(object):
 
             def compute_soln(converted_vars_signs):
 
+                #non-negativity of water mass fractions, as well as converted
+                # variable sign constraints
+                bounds = ([(0,None) for i in range(num_endmembers)]
+                         +(([(0,None) if converted_var_sign > 0 else (None,0)
+                           for converted_var_sign in converted_vars_signs])
+                           if num_converted_variables > 0 else []))
+
                 A_ub = np.concatenate(
-                  #non-negativity
-                   [-np.concatenate([
-                      np.eye(num_endmembers),
-                      np.zeros((num_endmembers, num_converted_variables))],
-                     axis=1)]
-                  #converted variables sign constraints
-                  + ([-np.concatenate([
-                      np.zeros((num_converted_variables, num_endmembers)),
-                      np.diag(converted_vars_signs)],
-                     axis=1)]
-                   if num_converted_variables > 0 else [])
                   #usage penalty capped at original
-                  + [np.concatenate([obs_usagepenalty,
+                  [np.concatenate([obs_usagepenalty,
                                    np.zeros(num_converted_variables)])[None,:]]
                   #positive residual cap, negative residual cap
                   + [omp_A.T, -omp_A.T]
-                  #negative residual cap
                   )
                 b_ub = np.concatenate([
-                    #non-negativity and convvar sign constrains
-                    np.zeros(num_endmembers+num_converted_variables),
                     #usage penalty - capped at original
                     np.array([np.sum(obs_orig_endmem_fracs*obs_usagepenalty)]),
                     #positive residual cap
@@ -140,17 +133,27 @@ class OMPASoln(object):
                               np.zeros(num_converted_variables)])[None,:]
                 b_eq = np.array([1])
 
-                result = scipy.optimize.linprog(
-                           c=obj_weights, A_ub=A_ub, b_ub=b_ub,
-                           A_eq=A_eq, b_eq=b_eq) 
+                try:
+                    result = scipy.optimize.linprog(
+                               c=obj_weights, A_ub=A_ub, b_ub=b_ub,
+                               A_eq=A_eq, b_eq=b_eq, bounds=bounds) 
+                    if (result.success == False):
+                        fun = np.inf
+                    else:
+                        fun = result.fun
+                except ValueError as err:
+                    if err.args[0]==("The algorithm terminated successfully"
+                     +" and determined that the problem is infeasible."):
+                        fun = np.inf
+                    else:
+                        raise err
 
-                if (result.success == False):
-                    fun = np.inf
+                if (fun < np.inf):
+                    new_endmem_fracs = result.x[:num_endmembers]
+                    new_converted_vars = result.x[num_endmembers:] 
                 else:
-                    fun = result.fun
-
-                new_endmem_fracs = result.x[:num_endmembers]
-                new_converted_vars = result.x[num_endmembers:] 
+                    new_endmem_fracs = None
+                    new_converted_vars = None
 
                 return ((new_endmem_fracs, new_converted_vars),
                         fun) #soln and optimal value
@@ -165,7 +168,7 @@ class OMPASoln(object):
                 objs.append(obj)
             new_endmem_fracs, new_converted_vars = solns[np.argmin(objs)]
             assert new_endmem_fracs is not None
-            assert np.abs(np.sum(new_endmem_fracs) - 1) < 1e-6,\
+            assert np.abs(np.sum(new_endmem_fracs) - 1) < 1e-5,\
                 np.sum(new_endmem_fracs) 
 
             #fix any numerical issues with soln
@@ -267,11 +270,12 @@ class OMPASoln(object):
                             np.sum(endmem_fracs*usagepenalty)
                         ], axis=0) 
 
-                A_eq = (usagepenalty[None,:] @
-                        self.nullspace_A[:len(endmem_fracs)])
-                b_eq = 0
+                #A_eq = (usagepenalty[None,:] @
+                #        self.nullspace_A[:len(endmem_fracs)])
+                #b_eq = 0
 
                 res = scipy.optimize.linprog(c=c, A_ub=A_ub, b_ub=b_ub,
+                                             bounds=(None,None)
                                              #A_eq=A_eq, b_eq=b_eq
                                             ) 
 
