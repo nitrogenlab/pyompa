@@ -5,10 +5,13 @@ from .util import assert_in, assert_compatible_keys, assert_has_keys
 
 def get_exponential_from_bounds_func(alpha, beta,
                                      lowerbound=-np.inf,
-                                     upperbound=np.inf):
+                                     upperbound=np.inf,
+                                     magnitudelimit=10000):
+    #the magnitude limit is there to prevent problems with condition number
+    # and optimization later on
     assert upperbound > lowerbound, (upperbound, lowerbound)
-    return lambda x: beta*(np.exp(
-        alpha*np.maximum(0, np.maximum(lowerbound-x, x-upperbound)))-1)
+    return lambda x: np.minimum(magnitudelimit, beta*(np.exp(
+        alpha*np.maximum(0, np.maximum(lowerbound-x, x-upperbound)))-1))
 
 
 #same as get_exponential_from_bounds_func but with defaults for alpha and beta

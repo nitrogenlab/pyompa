@@ -133,10 +133,31 @@ class OMPASoln(object):
                               np.zeros(num_converted_variables)])[None,:]
                 b_eq = np.array([1])
 
+                x = cp.Variable(shape=(A_ub.shape[1]))
+                obj = cp.Minimize(cp.sum(obj_weights@x))
+
+                constraints = ([A_ub@x <= b_ub,
+                                A_eq@x == b_eq,
+                                x[:num_endmembers] >= 0] #non-negativit
+                                #converted variable signs
+                           +([(var >= 0 if converted_var_sign > 0 else
+                               var <= 0) for var,converted_var_sign in
+                             zip(x[num_endmembers:], converted_vars_signs)
+                             ] if num_converted_variables > 0 else [])
+                         )
+
+                prob = cp.Problem(obj, constraints)
+                prob.solve(verbose=False)
+
+                #print("status:", prob.status)
+                #print("optimal value", prob.value)
+
                 try:
                     result = scipy.optimize.linprog(
                                c=obj_weights, A_ub=A_ub, b_ub=b_ub,
-                               A_eq=A_eq, b_eq=b_eq, bounds=bounds) 
+                               A_eq=A_eq, b_eq=b_eq, bounds=bounds,
+                               options={'autoscale':True}
+                               ) 
                     if (result.success == False):
                         fun = np.inf
                     else:
@@ -147,6 +168,12 @@ class OMPASoln(object):
                         fun = np.inf
                     else:
                         raise err
+
+                if (fun != np.inf):
+                    if (np.abs(prob.value-fun) > 1e-4):
+                        print (fun, prob.value)
+                else:
+                    assert prob.value==np.inf
 
                 if (fun < np.inf):
                     new_endmem_fracs = result.x[:num_endmembers]
@@ -264,19 +291,25 @@ class OMPASoln(object):
                      *self.nullspace_A[len(endmem_fracs):]),
                    usagepenalty[None,:]@self.nullspace_A[:len(endmem_fracs)]
                   ], axis=0)
-                b_ub = np.concatenate([
-                            endmem_fracs,
-                            converted_vars*converted_vars_signs,
-                            np.sum(endmem_fracs*usagepenalty)
-                        ], axis=0) 
+                b_ub = np.array(
+                        (list(endmem_fracs)
+                         +list(converted_vars*converted_vars_signs)
+                         +[np.sum(endmem_fracs*usagepenalty)]
+                        )) 
 
-                #A_eq = (usagepenalty[None,:] @
-                #        self.nullspace_A[:len(endmem_fracs)])
-                #b_eq = 0
+                #print("condition number", np.linalg.cond(A_ub))
+
+                #A_eq constraint should be redundant with nullspace,
+                # but putting it in to be safe.
+                A_eq = (usagepenalty[None,:] @
+                        self.nullspace_A[:len(endmem_fracs)])
+                b_eq = 0
 
                 res = scipy.optimize.linprog(c=c, A_ub=A_ub, b_ub=b_ub,
-                                             bounds=(None,None)
-                                             #A_eq=A_eq, b_eq=b_eq
+                                             A_eq=A_eq, b_eq=b_eq,
+                                             bounds=(-1e7,1e7),
+                                             options={'autoscale':True,
+                                                      'lstsq':True}
                                             ) 
 
                 if (res.success == False):
@@ -290,6 +323,11 @@ class OMPASoln(object):
                 new_endmem_fracs = (endmem_fracs + endmem_frac_deltas)
                 new_converted_vars = (converted_vars
                   + self.nullspace_A[len(endmem_fracs):] @ v)
+
+                assert np.abs(np.sum(new_endmem_fracs) - 1) < 1e-7,\
+                       (np.abs(np.sum(new_endmem_fracs) - 1),
+                        new_endmem_fracs,
+                        np.sum(new_endmem_fracs), v)
 
                 return ((new_endmem_fracs, new_converted_vars),
                         fun) #soln and optimal value
@@ -305,7 +343,6 @@ class OMPASoln(object):
                     objs.append(obj)
                 new_endmem_fracs, new_converted_vars = solns[np.argmin(objs)]
                 assert new_endmem_fracs is not None
-                assert np.abs(np.sum(new_endmem_fracs) - 1) < 1e-7
                 #fix any numerical issues with soln
                 new_endmem_fracs = np.maximum(new_endmem_fracs, 0)
                 new_endmem_fracs = new_endmem_fracs/(np.sum(new_endmem_fracs))
