@@ -53,6 +53,53 @@ def collapse_endmembers_by_idxmapping(endmember_fractions,
     return remapped_endmember_fractions
 
 
+def organize_converted_vars_by_groupname(converted_variables,
+                                         convertedparam_groups):
+    """
+    converted_variables: a matrix of dimensions
+        num_converted_variables X num_parameters
+    """
+    groupname_to_totalconvertedvariable = OrderedDict()
+    groupname_to_effectiveconversionratios = OrderedDict()
+    convar_idx = 0
+    for convertedparam_group in convertedparam_groups:
+        groupname = convertedparam_group.groupname
+        #each type of converted variable may have multiple instances of
+        # itself corresponding to different conversion ratios
+        convar_vals = converted_variables[:,
+            convar_idx:
+            convar_idx+len(convertedparam_group.conversion_ratios)]
+        convar_idx += len(convertedparam_group.conversion_ratios)
+        #sanity check the signs; for each entry they
+        # should either be all positive or all negative, within numerical
+        # precision
+        for convar_vals_row in convar_vals:
+            if ((all(convar_vals_row >= 0) or
+                 all(convar_vals_row <= 0))==False):
+                print("WARNING: sign inconsistency in "
+                      +groupname+":", convar_vals_row)
+        total_convar = np.sum(convar_vals, axis=-1)
+        groupname_to_totalconvertedvariable[groupname] =\
+            total_convar 
+        #proportions of the converted variable used at differnet ratios
+        with np.errstate(divide='ignore', invalid='ignore'):
+            convarusage_proportions = (
+                convar_vals/total_convar[:,None])
+            effective_conversion_ratios = OrderedDict()
+            conversion_ratios_dict =\
+                convertedparam_group.get_conversion_ratios_dict() 
+            effective_conversion_ratios = OrderedDict([
+                (relevant_param_name,
+                 convarusage_proportions@conversion_ratio)
+                for relevant_param_name,conversion_ratio in
+                conversion_ratios_dict.items()
+             ]) 
+            groupname_to_effectiveconversionratios[groupname] =\
+                effective_conversion_ratios
+
+    return (groupname_to_totalconvertedvariable,
+            groupname_to_effectiveconversionratios) 
+
 #import gsw
 #
 #

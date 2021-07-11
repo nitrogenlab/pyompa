@@ -7,7 +7,8 @@ import scipy.spatial
 import scipy.optimize
 from collections import OrderedDict, defaultdict
 import itertools
-from .util import get_endmember_idx_mapping
+from .util import (get_endmember_idx_mapping,
+                   organize_converted_vars_by_groupname)
 import sys
 
 
@@ -61,8 +62,8 @@ class OMPASoln(object):
             self.ompa_problem.prep_endmember_usagepenalty_mat(endmember_names)
 
         #Prepare A (from the original omp problem)
-        groupname_to_conversionratiosdict, conversion_ratio_rows =\
-                self.ompa_problem.get_conversion_ratio_rows_of_A()
+        conversion_ratio_rows =\
+            self.ompa_problem.get_conversion_ratio_rows_of_A()
         num_converted_variables = len(conversion_ratio_rows)
         num_endmembers = self.endmember_fractions.shape[1]
         #conversion_ratio_rows = 'R'
@@ -149,41 +150,15 @@ class OMPASoln(object):
                 prob = cp.Problem(obj, constraints)
                 prob.solve(verbose=False)
 
-                #print("status:", prob.status)
-                #print("optimal value", prob.value)
-
-                try:
-                    result = scipy.optimize.linprog(
-                               c=obj_weights, A_ub=A_ub, b_ub=b_ub,
-                               A_eq=A_eq, b_eq=b_eq, bounds=bounds,
-                               options={'autoscale':True}
-                               ) 
-                    if (result.success == False):
-                        fun = np.inf
-                    else:
-                        fun = result.fun
-                except ValueError as err:
-                    if err.args[0]==("The algorithm terminated successfully"
-                     +" and determined that the problem is infeasible."):
-                        fun = np.inf
-                    else:
-                        raise err
-
-                if (fun != np.inf):
-                    if (np.abs(prob.value-fun) > 1e-4):
-                        print (fun, prob.value)
-                else:
-                    assert prob.value==np.inf
-
-                if (fun < np.inf):
-                    new_endmem_fracs = result.x[:num_endmembers]
-                    new_converted_vars = result.x[num_endmembers:] 
+                if (prob.value < np.inf):
+                    new_endmem_fracs = x.value[:num_endmembers]
+                    new_converted_vars = x.value[num_endmembers:] 
                 else:
                     new_endmem_fracs = None
                     new_converted_vars = None
 
                 return ((new_endmem_fracs, new_converted_vars),
-                        fun) #soln and optimal value
+                        prob.value) #soln and optimal value
 
             signcombos_to_try =\
                 self.ompa_problem.get_convertedvariable_signcombos_to_try()
@@ -459,6 +434,15 @@ class ConvertedParamGroup(object):
         self.always_positive = always_positive
         self.relevant_param_names = relevant_param_names
 
+    def get_conversion_ratios_dict(self):
+        conversion_ratios_dict = defaultdict(list)
+        for conversion_ratio in self.conversion_ratios: 
+            [conversion_ratios_dict[relevant_param_name].append(
+                    conversion_ratio[relevant_param_name])
+             for relevant_param_name
+             in self.relevant_param_names]
+        return conversion_ratios_dict
+
 
 class OMPAProblem(object):
     """
@@ -552,19 +536,11 @@ class OMPAProblem(object):
 
     def get_conversion_ratio_rows_of_A(self):
         rows = []
-        groupname_to_conversionratiosdict = OrderedDict()
         for convertedparam_group in self.convertedparam_groups:
-            conversion_ratios_dict = defaultdict(list)
             for conversion_ratio in convertedparam_group.conversion_ratios: 
                 rows.append([conversion_ratio.get(param_name,0)
                              for param_name in self.param_names])
-                [conversion_ratios_dict[relevant_param_name].append(
-                        conversion_ratio[relevant_param_name])
-                 for relevant_param_name
-                 in convertedparam_group.relevant_param_names]
-            groupname_to_conversionratiosdict[
-              convertedparam_group.groupname] = conversion_ratios_dict
-        return groupname_to_conversionratiosdict, np.array(rows)
+        return np.array(rows)
 
     def get_convertedvariable_signcombos_to_try(self):
         #Get the different sign constraints to apply to the converted variables
@@ -635,8 +611,7 @@ class OMPAProblem(object):
         self.endmember_usagepenalty = endmember_usagepenalty
 
         #Prepare A
-        groupname_to_conversionratiosdict, conversion_ratio_rows =\
-                self.get_conversion_ratio_rows_of_A()
+        conversion_ratio_rows = self.get_conversion_ratio_rows_of_A()
         #conversion_ratio_rows = 'R'
         endmem_mat = self.get_endmem_mat(endmember_df) #'M'
         if (len(conversion_ratio_rows > 0)):
@@ -679,8 +654,6 @@ class OMPAProblem(object):
         if (self.standardize_by_watertypes):
             weighting = weighting/param_std
             print("effective weighting:", weighting/param_std)
-        print("Conversion ratios:\n"
-              +str(groupname_to_conversionratiosdict))
         orig_A = A.copy()
         orig_b = b
         if (self.standardize_by_watertypes):
@@ -746,45 +719,11 @@ class OMPAProblem(object):
         else:
             param_residuals = None
 
-        groupname_to_convertedvariables = {}
-        groupname_to_totalconvertedvariable = OrderedDict()
-        groupname_to_effectiveconversionratios = OrderedDict()
-        convar_idx = 0
-        for convertedparam_group in self.convertedparam_groups:
-            groupname = convertedparam_group.groupname
-            convar_vals = converted_variables[:,
-                convar_idx:
-                convar_idx+len(convertedparam_group.conversion_ratios)]
-            convar_idx += len(convertedparam_group.conversion_ratios)
-            #sanity check the signs; for each entry they
-            # should either be all positive or all negative, within numerical
-            # precision
-            for convar_vals_row in convar_vals:
-                if ((all(convar_vals_row >= 0) or
-                     all(convar_vals_row <= 0))==False):
-                    print("WARNING: sign inconsistency in "
-                          +groupname+":", convar_vals_row)
-            total_convar = np.sum(convar_vals, axis=-1)
-            groupname_to_totalconvertedvariable[groupname] =\
-                total_convar 
-            #proportions of oxygen use at differnet ratios
-            with np.errstate(divide='ignore', invalid='ignore'):
-                convarusage_proportions = (
-                    convar_vals/total_convar[:,None])
-                effective_conversion_ratios = OrderedDict()
-                conversion_ratios_dict = (
-                  groupname_to_conversionratiosdict[groupname])
-                effective_conversion_ratios = OrderedDict([
-                    (relevant_param_name,
-                     convarusage_proportions@conversion_ratio)
-                    for relevant_param_name,conversion_ratio in
-                    conversion_ratios_dict.items()
-                 ]) 
-                groupname_to_effectiveconversionratios[groupname] =\
-                    effective_conversion_ratios
-        else:
-            total_oxygen_deficit = None
-            effective_conversion_ratios = None
+        (groupname_to_totalconvertedvariable,
+         groupname_to_effectiveconversionratios) = (
+            organize_converted_vars_by_groupname(
+                converted_variables=converted_variables,
+                convertedparam_groups=self.convertedparam_groups)) 
 
         return OMPASoln(endmember_df=endmember_df, ompa_problem=self,
                   endmember_names=endmember_names,
