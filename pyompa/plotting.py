@@ -183,7 +183,8 @@ def plot_thermocline_endmember_fractions(ompa_problems_arr,
                 for x in ompa_problems_arr
             ], axis=0)
         groupname_to_effectiveconversionratios[groupname] = OrderedDict()
-        for paramname in groupname_to_effectiveconversionratios[groupname]: 
+        for paramname in (ompa_problems_arr[0].
+                          groupname_to_effectiveconversionratios[groupname]): 
             groupname_to_effectiveconversionratios[groupname][paramname] =\
                 np.concatenate([
                  x.groupname_to_effectiveconversionratios[groupname][paramname]
