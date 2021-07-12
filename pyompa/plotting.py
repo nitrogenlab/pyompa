@@ -3,6 +3,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 from .util import collapse_endmembers_by_idxmapping
+from collections import OrderedDict
 
 
 def plot_endmember_usagepenalties(endmembername_to_usagepenalty,
@@ -171,15 +172,23 @@ def plot_thermocline_endmember_fractions(ompa_problems_arr,
     endmember_fractions = np.concatenate([
             x.endmember_fractions for x in ompa_problems_arr], axis=0)
     endmembernames = ompa_problems_arr[0].endmember_names
-    converted_param_names = ompa_problems_arr[0].converted_params_to_use
-    if (ompa_problems_arr[0].total_oxygen_deficit is not None):
-        total_oxygen_deficit = np.concatenate([x.total_oxygen_deficit
-                                           for x in ompa_problems_arr], axis=0)
-        effective_conversion_ratios = np.concatenate([
-              x.effective_conversion_ratios for x in ompa_problems_arr], axis=0)
-    else:
-        total_oxygen_deficit = None
-        effective_conversion_ratios = None
+
+    groupname_to_totalconvertedvariable = OrderedDict()
+    groupname_to_effectiveconversionratios = OrderedDict()
+
+    for groupname in ompa_problems_arr[0].groupname_to_totalconvertedvariable:
+        groupname_to_totalconvertedvariable[groupname] =\
+            np.concatenate([
+                x.groupname_to_totalconvertedvariable[groupname]
+                for x in ompa_problems_arr
+            ], axis=0)
+        groupname_to_effectiveconversionratios[groupname] = OrderedDict()
+        for paramname in groupname_to_effectiveconversionratios[groupname]: 
+            groupname_to_effectiveconversionratios[groupname][paramname] =\
+                np.concatenate([
+                 x.groupname_to_effectiveconversionratios[groupname][paramname]
+                 for x in ompa_problems_arr
+                ], axis=0)
 
     plot_endmember_fractions(
         xaxis_vals=xaxis_vals,
@@ -188,9 +197,10 @@ def plot_thermocline_endmember_fractions(ompa_problems_arr,
         yaxis_label=yaxis_colname,
         endmember_fractions=endmember_fractions,
         endmembernames=endmembernames,
-        total_oxygen_deficit=total_oxygen_deficit,
-        converted_param_names=converted_param_names,
-        effective_conversion_ratios=effective_conversion_ratios,
+        groupname_to_totalconvertedvariable=
+            groupname_to_totalconvertedvariable,
+        groupname_to_effectiveconversionratios=
+            groupname_to_effectiveconversionratios,
         flip_y=flip_y)
 
 
@@ -199,8 +209,7 @@ def plot_thermocline_residuals(ompa_problems_arr, xaxis_colname, yaxis_colname,
 
     param_residuals = np.concatenate([
             x.param_residuals for x in ompa_problems_arr], axis=0)
-    param_names = (ompa_problems_arr[0].conserved_params_to_use
-                     +ompa_problems_arr[0].converted_params_to_use)
+    param_names = ompa_problems_arr[0].param_names
     xaxis_vals = np.concatenate([
             np.array(x.obs_df[xaxis_colname]) for x in ompa_problems_arr])
     yaxis_vals = np.concatenate([

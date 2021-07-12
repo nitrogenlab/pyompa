@@ -71,20 +71,13 @@ class ThermoclineArrayOMPAProblem(object):
     def __init__(self, stratification_col,
                        tc_lower_bound, tc_upper_bound, tc_step,
                        obs_df,
-                       paramsandweighting_conserved,
-                       paramsandweighting_converted,
-                       conversionratios,
-                       endmembername_to_usagepenaltyfunc={}):
+                       **ompa_core_params):
         self.stratification_col = stratification_col
         self.tc_lower_bound = tc_lower_bound
         self.tc_upper_bound = tc_upper_bound
         self.tc_step = tc_step
         self.obs_df = obs_df
-        self.paramsandweighting_conserved = paramsandweighting_conserved
-        self.paramsandweighting_converted = paramsandweighting_converted
-        self.conversionratios = conversionratios
-        self.endmembername_to_usagepenaltyfunc =\
-            endmembername_to_usagepenaltyfunc
+        self.ompa_core_params = ompa_core_params
 
     def solve(self, endmemname_to_df, endmember_name_column="endmember_name",
                     endmemnames_to_use=None): 
@@ -92,7 +85,7 @@ class ThermoclineArrayOMPAProblem(object):
             endmemnames_to_use = sorted(endmemname_to_df.keys())
         thermocline_ompa_results = []
         for bin_start in np.arange(self.tc_lower_bound,
-                                        self.tc_upper_bound, self.tc_step):
+                                   self.tc_upper_bound, self.tc_step):
             bin_end = bin_start + self.tc_step
             #Get the endmember dataframe for OMPA analysis corresponding to the
             #range 
@@ -117,12 +110,7 @@ class ThermoclineArrayOMPAProblem(object):
             # end members, you can define the ompa problem
             ompa_soln = OMPAProblem(
                 obs_df=obs_df_for_range, 
-                paramsandweighting_conserved=self.paramsandweighting_conserved,
-                paramsandweighting_converted=self.paramsandweighting_converted,
-                conversionratios=self.conversionratios,
-                smoothness_lambda=None,
-                endmembername_to_usagepenaltyfunc=
-                  self.endmembername_to_usagepenaltyfunc).solve(
+                **self.ompa_core_params).solve(
                     endmember_df=endmember_df_for_range,
                     endmember_name_column=endmember_name_column)
             if (ompa_soln.status != "infeasible"):
