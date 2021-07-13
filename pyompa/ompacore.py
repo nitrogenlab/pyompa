@@ -77,6 +77,9 @@ class OMPASoln(object):
         #prepare original b
         omp_b = self.ompa_problem.get_b() 
 
+        omp_reweighted_A, omp_reweighted_b =\
+            self.get_reweighted_A_and_b(endmem_mat=endmem_mat, A=A, b=b)
+
         #For each observation, we can solve the linear program
         new_perobs_endmember_fractions = []
         if (num_converted_variables > 0):
@@ -103,49 +106,75 @@ class OMPASoln(object):
 
             assert len(obj_weights) == omp_A.shape[0]
 
+            A_ub = np.concatenate(
+              #(linear) usage penalty capped at original...I am just doing
+              # this for the benefit of keeping things as a linear program
+              [np.concatenate([obs_usagepenalty,
+                               np.zeros(num_converted_variables)])[None,:]]
+              #positive residual cap, negative residual cap
+              + [omp_A.T, -omp_A.T]
+              )
+            b_ub = np.concatenate([
+                #(linear) usage penalty capped at original...I am just doing
+                # this for the benefit of keeping things as a linear program
+                np.array([np.sum(obs_orig_endmem_fracs*obs_usagepenalty)]),
+                #positive residual cap
+                obs_b + obs_upper_resids,
+                #negative residual cap 
+                -(obs_b + obs_lower_resids)
+               ], axis=0) 
+
+            #enforcing that the end-member fractions sum to 1
+            A_eq = np.concatenate([
+                          np.ones(num_endmembers),
+                          np.zeros(num_converted_variables)])[None,:]
+            b_eq = np.array([1])
+
+            def get_shared_constraints(x, converted_vars_signs):
+                return ([
+                         A_ub@x <= b_ub,
+                         A_eq@x == b_eq,
+                         x[:num_endmembers] >= 0 #non-negativity
+                        ]
+                    +([(var >= 0 if converted_var_sign > 0 else
+                        var <= 0) for var,converted_var_sign in
+                        zip(x[num_endmembers:], converted_vars_signs)
+                      ] if num_converted_variables > 0 else []))
+
+            #once we find a solution that minimizes the objective specified
+            # by obj_weights within the specified residual limits, we then
+            # compute a solution that is constrained to meet this minimum,
+            # but which also minimizes the residuals. 
+            def compute_secondary_soln(primary_obj_soln, converted_vars_signs):
+                x = cp.Variable(shape=(A_ub.shape[1]))
+                obj = (cp.sum_squares(omp_reweighted_A@x - omp_reweighted_b)
+                       + cp.sum_squares(
+                          cp.atoms.affine.binary_operators.multiply(
+                           obs_usagepenalty,x))  )
+                #constraints should meet the primary objective plus all
+                # the other relevant constraints. That might give us the
+                # most meaningful end-member fractions and residuals for
+                # the remaining stuff
+                constraints = ([obj_weights@x == primary_obj_soln]
+                               + get_shared_constraints())
+                prob = cp.Problem(obj, constraints)
+                prob.solve(verbose=False)
+                if (prob.value < np.inf):
+                    new_endmem_fracs = x.value[:num_endmembers]
+                    new_converted_vars = x.value[num_endmembers:] 
+                else:
+                    new_endmem_fracs = None
+                    new_converted_vars = None
+
+                return ((new_endmem_fracs, new_converted_vars),
+                        prob.value) #soln and optimal value
+
             def compute_soln(converted_vars_signs):
-
-                #non-negativity of water mass fractions, as well as converted
-                # variable sign constraints
-                bounds = ([(0,None) for i in range(num_endmembers)]
-                         +(([(0,None) if converted_var_sign > 0 else (None,0)
-                           for converted_var_sign in converted_vars_signs])
-                           if num_converted_variables > 0 else []))
-
-                A_ub = np.concatenate(
-                  #usage penalty capped at original
-                  [np.concatenate([obs_usagepenalty,
-                                   np.zeros(num_converted_variables)])[None,:]]
-                  #positive residual cap, negative residual cap
-                  + [omp_A.T, -omp_A.T]
-                  )
-                b_ub = np.concatenate([
-                    #usage penalty - capped at original
-                    np.array([np.sum(obs_orig_endmem_fracs*obs_usagepenalty)]),
-                    #positive residual cap
-                    obs_b + obs_upper_resids,
-                    #negative residual cap 
-                    -(obs_b + obs_lower_resids)
-                   ], axis=0) 
-
-                #enforcing that the end-member fractions sum to 1
-                A_eq = np.concatenate([
-                              np.ones(num_endmembers),
-                              np.zeros(num_converted_variables)])[None,:]
-                b_eq = np.array([1])
 
                 x = cp.Variable(shape=(A_ub.shape[1]))
                 obj = cp.Minimize(cp.sum(obj_weights@x))
 
-                constraints = ([A_ub@x <= b_ub,
-                                A_eq@x == b_eq,
-                                x[:num_endmembers] >= 0] #non-negativit
-                                #converted variable signs
-                           +([(var >= 0 if converted_var_sign > 0 else
-                               var <= 0) for var,converted_var_sign in
-                             zip(x[num_endmembers:], converted_vars_signs)
-                             ] if num_converted_variables > 0 else [])
-                         )
+                constraints = get_shared_constraints()
 
                 prob = cp.Problem(obj, constraints)
                 prob.solve(verbose=False)
@@ -168,7 +197,14 @@ class OMPASoln(object):
                 soln, obj = compute_soln(signcombo)
                 solns.append(soln)
                 objs.append(obj)
-            new_endmem_fracs, new_converted_vars = solns[np.argmin(objs)]
+
+            best_sign_combo = signcombos_to_try[np.argmin(objs)]
+            #new_endmem_fracs, new_converted_vars = solns[np.argmin(objs)]
+            ((new_endmem_fracs, new_converted_vars),resid_obj) =\
+                compute_secondary_soln(
+                    primary_obj_soln=np.min(objs),
+                    converted_vars_signs=best_sign_combo)
+
             assert new_endmem_fracs is not None
             assert np.abs(np.sum(new_endmem_fracs) - 1) < 1e-5,\
                 np.sum(new_endmem_fracs) 
@@ -176,7 +212,6 @@ class OMPASoln(object):
             #fix any numerical issues with soln
             new_endmem_fracs = np.maximum(new_endmem_fracs, 0)
             new_endmem_fracs = new_endmem_fracs/(np.sum(new_endmem_fracs))
-            best_sign_combo = signcombos_to_try[np.argmin(objs)]
             new_converted_vars = best_sign_combo*np.maximum(
                                  (best_sign_combo*new_converted_vars), 0.0)
             new_vars_soln = np.concatenate([new_endmem_fracs,
@@ -534,6 +569,41 @@ class OMPAProblem(object):
     def get_param_weighting(self):
         return np.array([self.param_weightings[x] for x in self.param_names])
 
+    def get_reweighted_A_and_b(self, endmem_mat, A, b):
+        weighting = get_param_weighting() 
+        if (self.standardize_by_watertypes):
+            param_mean = np.mean(endmem_mat, axis=0) 
+            #if std is inf, set to 1
+            param_std = np.std(endmem_mat, axis=0, ddof=1)
+            mass_idxs = np.nonzero(1.0*(param_std==0))[0]
+            param_std[mass_idxs] = 1.0
+            #Assume that the entry with std of 0 is also the one that has
+            # mass in it
+            print("I'm assuming that the index encoding mass is:",
+                  mass_idxs)
+            if (len(mass_idxs) > 1):
+                raise RuntimeError("Multiple indices in source water type"
+                +" matrix have 0 std...I need to be told which one"
+                +" is 'mass' "+str(endmem_mat))
+            param_mean[mass_idxs] = 0.0
+            print("Std used for normalization:",param_std)
+            print("Mean used for normalization:",param_mean)
+
+        #Rescale by param weighting
+        print("params to use:", self.param_names)        
+        print("param weighting:", weighting)
+        if (self.standardize_by_watertypes):
+            weighting = weighting/param_std
+            print("effective weighting:", weighting)
+
+        if (self.standardize_by_watertypes):
+            A[:len(endmem_mat)] = A[:len(endmem_mat)] - param_mean[None,:]
+            b = b-param_mean[None,:]
+        A = A*weighting[None,:]
+        b = b*weighting[None,:]
+
+        return A, b
+
     def get_conversion_ratio_rows_of_A(self):
         rows = []
         for convertedparam_group in self.convertedparam_groups:
@@ -603,7 +673,6 @@ class OMPAProblem(object):
             endmember_names=endmember_names)
         print("Endmember-idx mapping is\n",endmember_idx_mapping)
 
-        weighting = self.get_param_weighting() 
         smoothness_lambda = self.smoothness_lambda
 
         endmember_usagepenalty =\
@@ -620,49 +689,18 @@ class OMPAProblem(object):
         else:
             A = endmem_mat
 
-        if (self.standardize_by_watertypes):
-            param_mean = np.mean(endmem_mat, axis=0) 
-            #if std is inf, set to 1
-            param_std = np.std(endmem_mat, axis=0, ddof=1)
-            mass_idxs = np.nonzero(1.0*(param_std==0))[0]
-            param_std[mass_idxs] = 1.0
-            #Assume that the entry with std of 0 is also the one that has
-            # mass in it
-            print("I'm assuming that the index encoding mass is:",
-                  mass_idxs)
-            if (len(mass_idxs) > 1):
-                raise RuntimeError("Multiple indices in source water type"
-                +" matrix have 0 std...I need to be told which one"
-                +" is 'mass' "+str(endmem_mat))
-            param_mean[mass_idxs] = 0.0
-            print("Std used for normalization:",param_std)
-            print("Mean used for normalization:",param_mean)
-
         #compute the nullspace of A - will be useful for disentangling
         # ambiguity in the solution
         nullspace_A = self.get_nullspace(M=endmem_mat,
                                          R=conversion_ratio_rows)
-
         #prepare b
         b = self.get_b()
         if (batch_size is None):
             batch_size = len(b)
         
-        #Rescale by param weighting
-        print("params to use:", self.param_names)        
-        print("param weighting:", weighting)
-        if (self.standardize_by_watertypes):
-            weighting = weighting/param_std
-            print("effective weighting:", weighting/param_std)
         orig_A = A.copy()
         orig_b = b
-        if (self.standardize_by_watertypes):
-            A[:len(endmem_mat)] = A[:len(endmem_mat)] - param_mean[None,:]
-            b = b-param_mean[None,:]
-        A = A*weighting[None,:]
-        b = b*weighting[None,:]
-
-        print("Matrix A:")
+        A, b = self.get_reweighted_A_and_b(endmem_mat=endmem_mat, A=A, b=b)
 
         if (smoothness_lambda is not None):
             pairs_matrix = make_pairs_matrix(
