@@ -1,7 +1,8 @@
 from __future__ import division, print_function
-from .ompacore import OMPAProblem
+from .ompacore import OMPAProblem, ExportToCsvMixin
 import numpy as np
 import pandas as pd
+from collections import OrderedDict
 
 
 def get_endmember_df_for_range(endmemnames_to_use,
@@ -44,7 +45,7 @@ def get_endmember_df_for_range(endmemnames_to_use,
     return paired_up_endmember_df
 
 
-class ThermoclineArraySoln(object):
+class ThermoclineArraySoln(ExportToCsvMixin):
 
     def __init__(self, endmemname_to_df,
                        endmember_name_column,
@@ -55,6 +56,39 @@ class ThermoclineArraySoln(object):
         self.endmemnames_to_use = endmemnames_to_use
         self.thermocline_ompa_problem = thermocline_ompa_problem
         self.thermocline_ompa_results = thermocline_ompa_results
+
+        #get attributes in a format that is compatible with the API
+        # of OMPASoln, for plotting and csv export purposes
+        self.obs_df = pd.concat([x.obs_df for x in self])
+        self.endmember_names = self[0].endmember_names
+        self.endmembername_to_indices = self[0].endmembername_to_indices
+        self.param_names = self[0].param_names
+        self.endmember_fractions = np.concatenate([
+            x.endmember_fractions for x in self], axis=0) 
+        self.converted_variables = np.concatenate([
+            x.converted_variables for x in self], axis=0)
+        self.param_residuals = np.concatenate([
+            x.param_residuals for x in self], axis=0)
+        #getting the groupname_to_xxx attributes ready
+        self.groupname_to_totalconvertedvariable = OrderedDict()
+        self.groupname_to_effectiveconversionratios = OrderedDict()
+        for groupname in (self[0].groupname_to_totalconvertedvariable):
+            self.groupname_to_totalconvertedvariable[groupname] =\
+                np.concatenate([
+                    x.groupname_to_totalconvertedvariable[groupname]
+                    for x in self
+                ], axis=0)
+            self.groupname_to_effectiveconversionratios[groupname] =\
+                    OrderedDict()
+            for paramname in (self[0].
+                            groupname_to_effectiveconversionratios[groupname]): 
+                self.groupname_to_effectiveconversionratios[
+                    groupname][paramname] = (
+                 np.concatenate([
+                  x.groupname_to_effectiveconversionratios[
+                        groupname][paramname]
+                  for x in self
+                 ], axis=0))
 
     def __len__(self):
         return len(self.thermocline_ompa_results)
@@ -78,6 +112,22 @@ class ThermoclineArrayOMPAProblem(object):
         self.tc_step = tc_step
         self.obs_df = obs_df
         self.ompa_core_params = ompa_core_params
+        if (np.min(self.obs_df[self.stratification_col])
+            < self.tc_lower_bound):
+            print("==============================")
+            print("Heads up! You specified a tc lower bound of",
+                  tc_lower_bound,"but the observations df contains samples"
+                  +" with a",self.stratification_col,
+                  "as low as",np.min(self.obs_df[self.stratification_col]))
+            print("==============================")
+        if (np.max(self.obs_df[self.stratification_col])
+            > self.tc_upper_bound):
+            print("==============================")
+            print("Heads up! You specified a tc upper bound of",
+                  tc_upper_bound,"but the observations df contains samples"
+                  +" with a",self.stratification_col,
+                  "as high as",np.max(self.obs_df[self.stratification_col]))
+            print("==============================")
 
     def solve(self, endmemname_to_df, endmember_name_column="endmember_name",
                     endmemnames_to_use=None): 

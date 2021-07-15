@@ -12,7 +12,78 @@ from .util import (get_endmember_idx_mapping,
 import sys
 
 
-class OMPASoln(object):
+class ExportToCsvMixin(object):
+
+    #main assumed self attributes:
+    # param_names, endmember_names, obs_df, endmember_fractions,
+    # groupname_to_totalconvertedvariable,
+    # groupname_to_effectiveconversionratios,
+    #exporting the usage penalties also uses
+    # ompa_problem.endmembername_to_usagepenalty
+    def export_to_csv(self, csv_output_name,
+                            orig_cols_to_include=[],
+                            export_orig_param_vals=True,
+                            export_residuals=True,
+                            export_endmember_fracs=True,
+                            export_converted_var_usage=True,
+                            export_conversion_ratios=True,
+                            export_endmember_usage_penalties=False):
+
+        print("writing to",csv_output_name)
+
+        toexport_df_dict = OrderedDict()
+
+        if (export_orig_param_vals):
+            orig_cols_to_include += self.param_names 
+
+        for orig_col in orig_cols_to_include:
+            assert orig_col in self.obs_df, (
+             "Export settings asked that "+orig_col+" be copied from the"
+             +" original observations data frame into the output, but"
+             +" no such column header was present in the observations data"
+             +" frame; the column headers are: "+str(self.obs_df.columns)) 
+            toexport_df_dict[orig_col] = self.obs_df[orig_col]
+
+        if (export_residuals):
+             for param_idx,param_name in enumerate(self.param_names):
+                toexport_df_dict[param_name+"_resid"] =\
+                    self.param_residuals[:,param_idx] 
+
+        endmember_names = self.endmember_names
+        if (export_endmember_fracs):
+            for endmember_idx in range(len(endmember_names)):
+                toexport_df_dict[endmember_names[endmember_idx]+"_frac"] =\
+                    self.endmember_fractions[:,endmember_idx]
+
+        if (export_converted_var_usage):
+            for groupname in self.groupname_to_totalconvertedvariable:
+                toexport_df_dict[groupname] =\
+                    self.groupname_to_totalconvertedvariable[groupname]
+
+        if (export_conversion_ratios): 
+            for groupname in self.groupname_to_effectiveconversionratios:
+                effective_conversion_ratios =\
+                    self.groupname_to_effectiveconversionratios[groupname]
+                for converted_param in effective_conversion_ratios:
+                    toexport_df_dict[converted_param+"_to_"
+                     +groupname+"_ratio"] =\
+                        effective_conversion_ratios[converted_param]
+
+        if (export_endmember_usage_penalties):
+            for endmembername in endmember_names:
+                if (endmembername in\
+                    self.ompa_problem.endmembername_to_usagepenalty): 
+                    endmember_usagepenalty = (self.ompa_problem.
+                                  endmembername_to_usagepenalty[endmembername])
+                    toexport_df_dict[endmembername+"_penalty"] =\
+                        endmember_usagepenalty
+        
+        toexport_df = pd.DataFrame(toexport_df_dict)
+        toexport_df.to_csv(csv_output_name, index=False)
+
+
+
+class OMPASoln(ExportToCsvMixin):
 
     def __init__(self, endmember_df, endmember_name_column,
                        ompa_problem,
@@ -366,67 +437,6 @@ class OMPASoln(object):
         return (np.array(new_perobs_endmember_fractions),
                 np.array(new_perobs_converted_vars),
                 np.array(perobs_obj))
-
-    def export_to_csv(self, csv_output_name,
-                            orig_cols_to_include=[],
-                            export_orig_param_vals=True,
-                            export_residuals=True,
-                            export_endmember_fracs=True,
-                            export_converted_var_usage=True,
-                            export_conversion_ratios=True,
-                            export_endmember_usage_penalties=False):
-
-        print("writing to",csv_output_name)
-
-        toexport_df_dict = OrderedDict()
-
-        if (export_orig_param_vals):
-            orig_cols_to_include += self.param_names 
-
-        for orig_col in orig_cols_to_include:
-            assert orig_col in self.obs_df, (
-             "Export settings asked that "+orig_col+" be copied from the"
-             +" original observations data frame into the output, but"
-             +" no such column header was present in the observations data"
-             +" frame; the column headers are: "+str(self.obs_df.columns)) 
-            toexport_df_dict[orig_col] = self.obs_df[orig_col]
-
-        if (export_residuals):
-             for param_idx,param_name in enumerate(self.param_names):
-                toexport_df_dict[param_name+"_resid"] =\
-                    self.param_residuals[:,param_idx] 
-
-        endmember_names = self.endmember_names
-        if (export_endmember_fracs):
-            for endmember_idx in range(len(endmember_names)):
-                toexport_df_dict[endmember_names[endmember_idx]+"_frac"] =\
-                    self.endmember_fractions[:,endmember_idx]
-
-        if (export_converted_var_usage):
-            for groupname in self.groupname_to_totalconvertedvariable:
-                toexport_df_dict[groupname] =\
-                    self.groupname_to_totalconvertedvariable[groupname]
-
-        if (export_conversion_ratios): 
-            for groupname in self.groupname_to_effectiveconversionratios:
-                effective_conversion_ratios =\
-                    self.groupname_to_effectiveconversionratios[groupname]
-                for converted_param in effective_conversion_ratios:
-                    toexport_df_dict[converted_param+"_to_"
-                     +groupname+"_ratio"] =\
-                        effective_conversion_ratios[converted_param]
-
-        if (export_endmember_usage_penalties):
-            for endmembername in endmember_names:
-                if (endmembername in\
-                    self.ompa_problem.endmembername_to_usagepenalty): 
-                    endmember_usagepenalty = (self.ompa_problem.
-                                  endmembername_to_usagepenalty[endmembername])
-                    toexport_df_dict[endmembername+"_penalty"] =\
-                        endmember_usagepenalty
-        
-        toexport_df = pd.DataFrame(toexport_df_dict)
-        toexport_df.to_csv(csv_output_name, index=False)
 
     def iteratively_refine_ompa_soln(self, num_iterations):
         init_endmember_df = self.ompa_problem.construct_ideal_endmembers(

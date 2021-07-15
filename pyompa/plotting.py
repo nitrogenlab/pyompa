@@ -153,77 +153,16 @@ def plot_ompasoln_residuals(ompa_soln, xaxis_colname,
         yaxis_label=yaxis_colname, flip_y=flip_y)
 
 
-def plot_thermocline_endmember_fractions(ompa_problems_arr,
-                                         xaxis_colname, yaxis_colname,
-                                         flip_y=True):
-    #first, check to make sure all entries in ompa_problems_arr have the same
-    # number of endmembers; the assert statement will throw an error if
-    # that is not the case
-
-    endmember_name_column = ompa_problems_arr[0].endmember_name_column
-    num_endmembers = ompa_problems_arr[0].endmember_fractions.shape[1]
-    assert all([x.endmember_fractions.shape[1]==num_endmembers
-                for x in ompa_problems_arr])
-
-    xaxis_vals = np.concatenate([
-            np.array(x.obs_df[xaxis_colname]) for x in ompa_problems_arr])
-    yaxis_vals = np.concatenate([
-        np.array(x.obs_df[yaxis_colname]) for x in ompa_problems_arr])
-    endmember_fractions = np.concatenate([
-            x.endmember_fractions for x in ompa_problems_arr], axis=0)
-    endmembernames = ompa_problems_arr[0].endmember_names
-
-    groupname_to_totalconvertedvariable = OrderedDict()
-    groupname_to_effectiveconversionratios = OrderedDict()
-
-    for groupname in ompa_problems_arr[0].groupname_to_totalconvertedvariable:
-        groupname_to_totalconvertedvariable[groupname] =\
-            np.concatenate([
-                x.groupname_to_totalconvertedvariable[groupname]
-                for x in ompa_problems_arr
-            ], axis=0)
-        groupname_to_effectiveconversionratios[groupname] = OrderedDict()
-        for paramname in (ompa_problems_arr[0].
-                          groupname_to_effectiveconversionratios[groupname]): 
-            groupname_to_effectiveconversionratios[groupname][paramname] =\
-                np.concatenate([
-                 x.groupname_to_effectiveconversionratios[groupname][paramname]
-                 for x in ompa_problems_arr
-                ], axis=0)
-
-    plot_endmember_fractions(
-        xaxis_vals=xaxis_vals,
-        yaxis_vals=yaxis_vals,
-        xaxis_label=xaxis_colname,
-        yaxis_label=yaxis_colname,
-        endmember_fractions=endmember_fractions,
-        endmembernames=endmembernames,
-        groupname_to_totalconvertedvariable=
-            groupname_to_totalconvertedvariable,
-        groupname_to_effectiveconversionratios=
-            groupname_to_effectiveconversionratios,
-        flip_y=flip_y)
+#deprecated now; api of ThermoclineArraySoln was updated such that can
+# just call plot_ompasoln_endmember_fractions
+def plot_thermocline_endmember_fractions(*args, **kwargs):
+    return plot_ompasoln_endmember_fractions(*args, **kwargs)
 
 
-def plot_thermocline_residuals(ompa_problems_arr, xaxis_colname, yaxis_colname,
-                               flip_y=True):
-
-    param_residuals = np.concatenate([
-            x.param_residuals for x in ompa_problems_arr], axis=0)
-    param_names = ompa_problems_arr[0].param_names
-    xaxis_vals = np.concatenate([
-            np.array(x.obs_df[xaxis_colname]) for x in ompa_problems_arr])
-    yaxis_vals = np.concatenate([
-        np.array(x.obs_df[yaxis_colname]) for x in ompa_problems_arr])
-
-    plot_residuals(
-        param_residuals=param_residuals,
-        param_names=param_names,
-        xaxis_vals=xaxis_vals,
-        yaxis_vals=yaxis_vals,
-        xaxis_label=xaxis_colname,
-        yaxis_label=yaxis_colname,
-        flip_y=flip_y)
+#deprecated now; api of ThermoclineArraySoln was updated such that can
+# just call plot_ompasoln_residuals
+def plot_thermocline_residuals(*args, **kwargs):
+    return plot_ompasoln_residuals(*args, **kwargs)
 
 
 def nozero_xaxis(field_name):
