@@ -14,12 +14,22 @@ import sys
 
 class ExportToCsvMixin(object):
 
+    @property
+    def endmember_names(self):
+        return self._endmember_names
+
+    @endmember_names.setter
+    def endmember_names(self, value):
+        self._endmember_names = value
+        self.endmembername_to_indices = get_endmember_idx_mapping(
+            endmember_names=self.endmember_names) 
+
     #main assumed self attributes:
     # param_names, endmember_names, obs_df, endmember_fractions,
     # groupname_to_totalconvertedvariable,
     # groupname_to_effectiveconversionratios,
     #exporting the usage penalties also uses
-    # ompa_problem.endmembername_to_usagepenalty
+    # endmembername_to_usagepenalty
     def export_to_csv(self, csv_output_name,
                             orig_cols_to_include=[],
                             export_orig_param_vals=True,
@@ -72,8 +82,8 @@ class ExportToCsvMixin(object):
         if (export_endmember_usage_penalties):
             for endmembername in endmember_names:
                 if (endmembername in\
-                    self.ompa_problem.endmembername_to_usagepenalty): 
-                    endmember_usagepenalty = (self.ompa_problem.
+                    self.endmembername_to_usagepenalty): 
+                    endmember_usagepenalty = (self.
                                   endmembername_to_usagepenalty[endmembername])
                     toexport_df_dict[endmembername+"_penalty"] =\
                         endmember_usagepenalty
@@ -114,16 +124,6 @@ class OMPASoln(ExportToCsvMixin):
                 ompa_problem.endmembername_to_usagepenalty
         self.nullspace_A = nullspace_A
         self.__dict__.update(kwargs)
-
-    @property
-    def endmember_names(self):
-        return self._endmember_names
-
-    @endmember_names.setter
-    def endmember_names(self, value):
-        self._endmember_names = value
-        self.endmembername_to_indices = get_endmember_idx_mapping(
-            endmember_names=self.endmember_names) 
 
     def core_quantify_ambiguity_via_residual_limits(self,
         obj_weights, max_resids, verbose=False):
@@ -289,7 +289,9 @@ class OMPASoln(ExportToCsvMixin):
              nullspace_A=None,
              endmember_names=self.endmember_names,
              obs_df=self.obs_df,
-             param_names=self.param_names)
+             param_names=self.param_names,
+             endmembername_to_usagepenalty=\
+                self.endmembername_to_usagepenalty)
 
         return new_ompasoln 
 

@@ -61,7 +61,6 @@ class ThermoclineArraySoln(ExportToCsvMixin):
         # of OMPASoln, for plotting and csv export purposes
         self.obs_df = pd.concat([x.obs_df for x in self])
         self.endmember_names = self[0].endmember_names
-        self.endmembername_to_indices = self[0].endmembername_to_indices
         self.param_names = self[0].param_names
         self.endmember_fractions = np.concatenate([
             x.endmember_fractions for x in self], axis=0) 
@@ -89,6 +88,24 @@ class ThermoclineArraySoln(ExportToCsvMixin):
                         groupname][paramname]
                   for x in self
                  ], axis=0))
+        #getting endmembername to usage penalty
+        self.endmembername_to_usagepenalty = OrderedDict()
+        for endmembername in self.endmember_names:
+            if endmembername in self[0].endmembername_to_usagepenalty: 
+                self.endmembername_to_usagepenalty[endmembername] =\
+                np.concatenate([x.endmembername_to_usagepenalty[endmembername]
+                                for x in self], axis=0) 
+
+    def core_quantify_ambiguity_via_residual_limits(self, *args, **kwargs):
+
+        solns = [x.core_quantify_ambiguity_via_residual_limits(*args, **kwargs)
+                 for x in self] 
+        return ThermoclineArraySoln(
+                    endmemname_to_df=self.endmemname_to_df,
+                    endmember_name_column=self.endmember_name_column,
+                    endmemnames_to_use=self.endmemnames_to_use,
+                    thermocline_ompa_problem=None,
+                    thermocline_ompa_results=solns) 
 
     def __len__(self):
         return len(self.thermocline_ompa_results)
