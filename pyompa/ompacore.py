@@ -190,10 +190,37 @@ class OMPASoln(object):
             new_perobs_converted_vars.append(new_converted_vars)
             perobs_obj.append(obj) 
 
-        return (np.array(new_perobs_endmember_fractions),
-                np.array(new_perobs_converted_vars),
-                np.array(perobs_obj),
-                np.array(new_perobs_resid))
+        new_perobs_converted_vars = np.array(new_perobs_converted_vars)
+        new_perobs_endmember_fractions =\
+            np.array(new_perobs_endmember_fractions)
+        perobs_obj = np.array(perobs_obj)
+        new_perobs_resid = np.array(new_perobs_resid)
+
+        #create a dummy OMPASoln object to store the end-member fractions,
+        # converted variable amounts and residuals
+        (new_groupname_to_totalconvertedvariable, 
+         new_groupname_to_effectiveconversionratios) = (
+           organize_converted_vars_by_groupname(
+               converted_variables=new_perobs_converted_vars,
+               convertedparam_groups=self.ompa_problem.convertedparam_groups)) 
+
+        new_ompasoln = OMPASoln(
+             endmember_df=self.endmember_df,
+             endmember_name_column=self.endmember_name_column,
+             ompa_problem=None,
+             endmember_fractions=new_perobs_endmember_fractions,
+             converted_variables=new_perobs_converted_vars,
+             param_residuals=new_perobs_resid,
+             groupname_to_effectiveconversionratios=
+               new_groupname_to_effectiveconversionratios,
+             groupname_to_totalconvertedvariable=
+               new_groupname_to_totalconvertedvariable,
+             nullspace_A=None,
+             endmember_names=self.endmember_names,
+             obs_df=self.obs_df,
+             param_names=self.param_names)
+
+        return new_ompasoln 
 
     def core_quantify_ambiguity_via_nullspace(self, obj_weights, verbose=False):
         #obj_weights should be an array of weights that define the objective
