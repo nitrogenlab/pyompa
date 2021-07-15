@@ -100,12 +100,15 @@ class ThermoclineArraySoln(ExportToCsvMixin):
 
         solns = [x.core_quantify_ambiguity_via_residual_limits(*args, **kwargs)
                  for x in self] 
-        return ThermoclineArraySoln(
+        to_return =  ThermoclineArraySoln(
                     endmemname_to_df=self.endmemname_to_df,
                     endmember_name_column=self.endmember_name_column,
                     endmemnames_to_use=self.endmemnames_to_use,
                     thermocline_ompa_problem=None,
                     thermocline_ompa_results=solns) 
+        to_return.perobs_obj = np.concatenate(
+            [x.perobs_obj for x in to_return], axis=0) 
+        return to_return
 
     def __len__(self):
         return len(self.thermocline_ompa_results)

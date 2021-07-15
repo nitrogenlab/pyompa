@@ -14,6 +14,31 @@ import sys
 
 class ExportToCsvMixin(object):
 
+    def __init__(self, param_names, endmember_names,
+                       obs_df,
+                       endmember_fractions,
+                       groupname_to_totalconvertedvariable,
+                       groupname_to_effectiveconversionratios,
+                       **kwargs):
+        self.param_names = param_names
+        self.endmember_names = endmember_names
+        self.obs_df = obs_df
+        self.endmember_fractions = endmember_fractions
+        self.groupname_to_totalconvertedvariable =\
+            groupname_to_totalconvertedvariable
+        self.groupname_to_effectiveconversionratios =\
+            groupname_to_effectiveconversionratios
+        self.__dict__.update(kwargs)
+
+    #@classmethod
+    #def merge(cls, exptocsv1, exptocsv2);
+    #    assert tuple(exptocsv1.param_names)==tuple(exptocsv2.param_names) 
+    #    new_endmember_names = []
+    #   
+    #    return ExportToCsvMixin(
+    #            param_names=exptocsv1.param_names,
+    #            endmember_names=new_endmember_names)
+
     @property
     def endmember_names(self):
         return self._endmember_names
@@ -291,7 +316,8 @@ class OMPASoln(ExportToCsvMixin):
              obs_df=self.obs_df,
              param_names=self.param_names,
              endmembername_to_usagepenalty=\
-                self.endmembername_to_usagepenalty)
+                self.endmembername_to_usagepenalty,
+             perobs_obj=perobs_obj)
 
         return new_ompasoln 
 
