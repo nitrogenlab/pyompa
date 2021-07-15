@@ -8,7 +8,8 @@ import scipy.optimize
 from collections import OrderedDict, defaultdict
 import itertools
 from .util import (get_endmember_idx_mapping,
-                   organize_converted_vars_by_groupname)
+                   organize_converted_vars_by_groupname,
+                   collapse_endmembers_by_idxmapping)
 import sys
 
 
@@ -60,6 +61,7 @@ class ExportToCsvMixin(object):
                             export_orig_param_vals=True,
                             export_residuals=True,
                             export_endmember_fracs=True,
+                            export_endmember_totals=True,
                             export_converted_var_usage=True,
                             export_conversion_ratios=True,
                             export_endmember_usage_penalties=False):
@@ -83,6 +85,17 @@ class ExportToCsvMixin(object):
              for param_idx,param_name in enumerate(self.param_names):
                 toexport_df_dict[param_name+"_resid"] =\
                     self.param_residuals[:,param_idx] 
+
+        if (export_endmember_totals):
+            endmembername_to_indices = self.endmembername_to_indices 
+            remapped_endmember_fractions =\
+                collapse_endmembers_by_idxmapping(
+                    endmember_fractions=self.endmember_fractions,
+                    endmembername_to_indices=endmembername_to_indices) 
+            for remapped_idx,endmembername in enumerate(
+                    endmembername_to_indices.keys()):
+                toexport_df_dict[endmembername+"_frac_total"] =\
+                    remapped_endmember_fractions[:,remapped_idx] 
 
         endmember_names = self.endmember_names
         if (export_endmember_fracs):
