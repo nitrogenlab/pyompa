@@ -199,6 +199,8 @@ class OMPASoln(object):
                 objs.append(obj)
 
             best_sign_combo = signcombos_to_try[np.argmin(objs)]
+
+            assert False
             #new_endmem_fracs, new_converted_vars = solns[np.argmin(objs)]
             ((new_endmem_fracs, new_converted_vars),resid_obj) =\
                 compute_secondary_soln(
@@ -570,7 +572,7 @@ class OMPAProblem(object):
         return np.array([self.param_weightings[x] for x in self.param_names])
 
     def get_reweighted_A_and_b(self, endmem_mat, A, b):
-        weighting = get_param_weighting() 
+        weighting = self.get_param_weighting() 
         if (self.standardize_by_watertypes):
             param_mean = np.mean(endmem_mat, axis=0) 
             #if std is inf, set to 1
