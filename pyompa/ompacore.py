@@ -667,7 +667,7 @@ class OMPAProblem(object):
         return ns
 
     def solve(self, endmember_df, endmember_name_column, batch_size=None,
-                    verbose=False):
+                    max_iter=100000, verbose=False):
 
         for param_name in self.param_names:
             assert param_name in endmember_df,\
@@ -993,7 +993,7 @@ class OMPAProblem(object):
                            - b*weighting[None,:]))
         constraints = [] #no constraints for now
         prob = cp.Problem(obj, constraints)
-        prob.solve(verbose=False, max_iter=50000)
+        prob.solve(verbose=False, max_iter=max_iter)
         
         print("status:", prob.status)
         print("optimal value", prob.value)
