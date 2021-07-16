@@ -789,8 +789,8 @@ class OMPAProblem(object):
             endmember_usagepenalty=endmember_usagepenalty,
             conversion_sign_constraints=best_sign_combos,
             smoothness_lambda=smoothness_lambda,
-            max_iter=max_iter,
-            batch_size=batch_size)
+            batch_size=batch_size,
+            max_iter=max_iter, verbose=verbose)
         
         if (endmember_fractions is not None):
             print("objective:", np.sum(perobs_weighted_resid_sq))
