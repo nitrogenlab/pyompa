@@ -140,7 +140,7 @@ class OMPASoln(ExportToCsvMixin):
                        param_residuals,
                        groupname_to_effectiveconversionratios,
                        groupname_to_totalconvertedvariable,
-                       nullspace_A,
+                       #nullspace_A,
                        **kwargs):
         if (endmember_df is not None):
             self.endmember_names=list(
@@ -160,7 +160,7 @@ class OMPASoln(ExportToCsvMixin):
             self.param_names = self.ompa_problem.param_names
             self.endmembername_to_usagepenalty =\
                 ompa_problem.endmembername_to_usagepenalty
-        self.nullspace_A = nullspace_A
+        #self.nullspace_A = nullspace_A
         self.__dict__.update(kwargs)
 
     def core_quantify_ambiguity_via_residual_limits(self,
@@ -324,7 +324,7 @@ class OMPASoln(ExportToCsvMixin):
                new_groupname_to_effectiveconversionratios,
              groupname_to_totalconvertedvariable=
                new_groupname_to_totalconvertedvariable,
-             nullspace_A=None,
+             #nullspace_A=None,
              endmember_names=self.endmember_names,
              obs_df=self.obs_df,
              param_names=self.param_names,
@@ -334,150 +334,150 @@ class OMPASoln(ExportToCsvMixin):
 
         return new_ompasoln 
 
-    def core_quantify_ambiguity_via_nullspace(self, obj_weights, verbose=False):
-        #obj_weights should be an array of weights that define the objective
-        # of the linear program, in the form "o @ (s + N(A) @ v)" (where
-        # o is the objective, s is the solution, N(A) is the null space of A)
+    #def core_quantify_ambiguity_via_nullspace(self, obj_weights, verbose=False):
+    #    #obj_weights should be an array of weights that define the objective
+    #    # of the linear program, in the form "o @ (s + N(A) @ v)" (where
+    #    # o is the objective, s is the solution, N(A) is the null space of A)
 
-        #For each soln s (length "num_endmem + num_conv_ratios"), the
-        # relevant linear programming constraints are
-        #For rows pertaining to end member fractions:
-        # "s + N(A) @ v >= 0" for endmember usgae
-        # "s + N(A) @ v >= 0" OR "s + N(A) v <= 0" for oxygen usage 
-        # (the 'or' means our solution space will basically contain two
-        #  polytopes that may be disconnected (if there are multiple
-        #  remin ratios; one polytope for positive and one for
-        #  negative oxygen usage)
-        #If there are any points with nonzero endmember usage constraints,
-        # we can further add the constraint that P @ (N(A) @ v) = 0
+    #    #For each soln s (length "num_endmem + num_conv_ratios"), the
+    #    # relevant linear programming constraints are
+    #    #For rows pertaining to end member fractions:
+    #    # "s + N(A) @ v >= 0" for endmember usgae
+    #    # "s + N(A) @ v >= 0" OR "s + N(A) v <= 0" for oxygen usage 
+    #    # (the 'or' means our solution space will basically contain two
+    #    #  polytopes that may be disconnected (if there are multiple
+    #    #  remin ratios; one polytope for positive and one for
+    #    #  negative oxygen usage)
+    #    #If there are any points with nonzero endmember usage constraints,
+    #    # we can further add the constraint that P @ (N(A) @ v) = 0
 
-        #Notes on how to determine the full feasible set (time complexity
-        # seems to increase exponentially:)
-        #If we are in |v| dimensional space, then the intersection of
-        # |v| nonredundant equality constraints will define the corners. 
-        #The available equality constraints are:
-        # num_endmem constraints of the form endmem == 0
-        # num_endmem constraints of the form endmem == 1
-        # num_convratio constraints of the form endmem == 0
-        # optionally one more constraint if there are nonzero usage penalties
-        #Full solution:
-        #From the (2*num_endmem + num_convratio + 1?) equations, we have
-        # to check all (2*num_endmem + num_convratio + 1?)-choose-|v| subsets
-        #Then for each subset, we need to solve the equation, and check
-        # whether the solution satisfies the remaining constraints.
-        #If the solution has negative O usage (has to be neg for all
-        # conv ratios), we store the point in the negative O usage polytope;
-        # otherwise, we store the point in the positive O usage polytope
-        #We would then return the two polytopes
+    #    #Notes on how to determine the full feasible set (time complexity
+    #    # seems to increase exponentially:)
+    #    #If we are in |v| dimensional space, then the intersection of
+    #    # |v| nonredundant equality constraints will define the corners. 
+    #    #The available equality constraints are:
+    #    # num_endmem constraints of the form endmem == 0
+    #    # num_endmem constraints of the form endmem == 1
+    #    # num_convratio constraints of the form endmem == 0
+    #    # optionally one more constraint if there are nonzero usage penalties
+    #    #Full solution:
+    #    #From the (2*num_endmem + num_convratio + 1?) equations, we have
+    #    # to check all (2*num_endmem + num_convratio + 1?)-choose-|v| subsets
+    #    #Then for each subset, we need to solve the equation, and check
+    #    # whether the solution satisfies the remaining constraints.
+    #    #If the solution has negative O usage (has to be neg for all
+    #    # conv ratios), we store the point in the negative O usage polytope;
+    #    # otherwise, we store the point in the positive O usage polytope
+    #    #We would then return the two polytopes
    
-        #In practice, however, we are probably interested in quantifying the
-        # limits of something (e.g. max and min values of an end member, or
-        # max/min amounts of a tracer that could be explained by mixing),
-        # in which case it is not necessary to solve for the full convex
-        # polytope; the problem can just be solved as a linear program
+    #    #In practice, however, we are probably interested in quantifying the
+    #    # limits of something (e.g. max and min values of an end member, or
+    #    # max/min amounts of a tracer that could be explained by mixing),
+    #    # in which case it is not necessary to solve for the full convex
+    #    # polytope; the problem can just be solved as a linear program
 
-        endmember_names = self.endmember_names
-        endmember_usagepenalty =\
-            self.ompa_problem.prep_endmember_usagepenalty_mat(endmember_names)
+    #    endmember_names = self.endmember_names
+    #    endmember_usagepenalty =\
+    #        self.ompa_problem.prep_endmember_usagepenalty_mat(endmember_names)
 
-        #For each observation, we can solve the linear program
-        new_perobs_endmember_fractions = []
-        new_perobs_converted_vars = []
-        perobs_obj = []
-        for obs_idx in range(len(self.endmember_fractions)):
-            endmem_fracs = self.endmember_fractions[obs_idx] 
-            assert len(endmem_fracs)==len(endmember_names)
-            converted_vars = self.converted_variables[obs_idx] 
-            usagepenalty = endmember_usagepenalty[obs_idx]
+    #    #For each observation, we can solve the linear program
+    #    new_perobs_endmember_fractions = []
+    #    new_perobs_converted_vars = []
+    #    perobs_obj = []
+    #    for obs_idx in range(len(self.endmember_fractions)):
+    #        endmem_fracs = self.endmember_fractions[obs_idx] 
+    #        assert len(endmem_fracs)==len(endmember_names)
+    #        converted_vars = self.converted_variables[obs_idx] 
+    #        usagepenalty = endmember_usagepenalty[obs_idx]
 
-            assert len(usagepenalty) == len(endmem_fracs)
-            assert ((len(endmem_fracs) + len(converted_vars))
-                    == self.nullspace_A.shape[0])
-            assert len(obj_weights) == self.nullspace_A.shape[0]
+    #        assert len(usagepenalty) == len(endmem_fracs)
+    #        #assert ((len(endmem_fracs) + len(converted_vars))
+    #        #        == self.nullspace_A.shape[0])
+    #        #assert len(obj_weights) == self.nullspace_A.shape[0]
 
-            def compute_soln(converted_vars_signs):
+    #        def compute_soln(converted_vars_signs):
 
-                c = (obj_weights @ self.nullspace_A)
+    #            c = (obj_weights @ self.nullspace_A)
 
-                A_ub = np.concatenate([
-                   -(self.nullspace_A[:len(endmem_fracs)]),
-                   -(converted_vars_signs[:,None]
-                     *self.nullspace_A[len(endmem_fracs):]),
-                   usagepenalty[None,:]@self.nullspace_A[:len(endmem_fracs)]
-                  ], axis=0)
-                b_ub = np.array(
-                        (list(endmem_fracs)
-                         +list(converted_vars*converted_vars_signs)
-                         +[np.sum(endmem_fracs*usagepenalty)]
-                        )) 
+    #            A_ub = np.concatenate([
+    #               -(self.nullspace_A[:len(endmem_fracs)]),
+    #               -(converted_vars_signs[:,None]
+    #                 *self.nullspace_A[len(endmem_fracs):]),
+    #               usagepenalty[None,:]@self.nullspace_A[:len(endmem_fracs)]
+    #              ], axis=0)
+    #            b_ub = np.array(
+    #                    (list(endmem_fracs)
+    #                     +list(converted_vars*converted_vars_signs)
+    #                     +[np.sum(endmem_fracs*usagepenalty)]
+    #                    )) 
 
-                #print("condition number", np.linalg.cond(A_ub))
+    #            #print("condition number", np.linalg.cond(A_ub))
 
-                #A_eq constraint should be redundant with nullspace,
-                # but putting it in to be safe.
-                A_eq = (usagepenalty[None,:] @
-                        self.nullspace_A[:len(endmem_fracs)])
-                b_eq = 0
+    #            #A_eq constraint should be redundant with nullspace,
+    #            # but putting it in to be safe.
+    #            A_eq = (usagepenalty[None,:] @
+    #                    self.nullspace_A[:len(endmem_fracs)])
+    #            b_eq = 0
 
-                res = scipy.optimize.linprog(c=c, A_ub=A_ub, b_ub=b_ub,
-                                             A_eq=A_eq, b_eq=b_eq,
-                                             bounds=(-1e7,1e7),
-                                             options={'autoscale':True,
-                                                      'lstsq':True}
-                                            ) 
+    #            res = scipy.optimize.linprog(c=c, A_ub=A_ub, b_ub=b_ub,
+    #                                         A_eq=A_eq, b_eq=b_eq,
+    #                                         bounds=(-1e7,1e7),
+    #                                         options={'autoscale':True,
+    #                                                  'lstsq':True}
+    #                                        ) 
 
-                if (res.success == False):
-                    fun = np.inf
-                else:
-                    fun = res.fun
+    #            if (res.success == False):
+    #                fun = np.inf
+    #            else:
+    #                fun = res.fun
 
-                v = res.x
+    #            v = res.x
 
-                endmem_frac_deltas = self.nullspace_A[:len(endmem_fracs)] @ v
-                new_endmem_fracs = (endmem_fracs + endmem_frac_deltas)
-                new_converted_vars = (converted_vars
-                  + self.nullspace_A[len(endmem_fracs):] @ v)
+    #            endmem_frac_deltas = self.nullspace_A[:len(endmem_fracs)] @ v
+    #            new_endmem_fracs = (endmem_fracs + endmem_frac_deltas)
+    #            new_converted_vars = (converted_vars
+    #              + self.nullspace_A[len(endmem_fracs):] @ v)
 
-                assert np.abs(np.sum(new_endmem_fracs) - 1) < 1e-7,\
-                       (np.abs(np.sum(new_endmem_fracs) - 1),
-                        new_endmem_fracs,
-                        np.sum(new_endmem_fracs), v)
+    #            assert np.abs(np.sum(new_endmem_fracs) - 1) < 1e-7,\
+    #                   (np.abs(np.sum(new_endmem_fracs) - 1),
+    #                    new_endmem_fracs,
+    #                    np.sum(new_endmem_fracs), v)
 
-                return ((new_endmem_fracs, new_converted_vars),
-                        fun) #soln and optimal value
+    #            return ((new_endmem_fracs, new_converted_vars),
+    #                    fun) #soln and optimal value
 
-            if (self.nullspace_A.shape[1] > 0):
-                signcombos_to_try =\
-                    self.ompa_problem.get_convertedvariable_signcombos_to_try()
-                solns = []
-                objs = []
-                for signcombo in signcombos_to_try:
-                    soln, obj = compute_soln(signcombo)
-                    solns.append(soln)
-                    objs.append(obj)
-                new_endmem_fracs, new_converted_vars = solns[np.argmin(objs)]
-                assert new_endmem_fracs is not None
-                #fix any numerical issues with soln
-                new_endmem_fracs = np.maximum(new_endmem_fracs, 0)
-                new_endmem_fracs = new_endmem_fracs/(np.sum(new_endmem_fracs))
+    #        if (self.nullspace_A.shape[1] > 0):
+    #            signcombos_to_try =\
+    #                self.ompa_problem.get_convertedvariable_signcombos_to_try()
+    #            solns = []
+    #            objs = []
+    #            for signcombo in signcombos_to_try:
+    #                soln, obj = compute_soln(signcombo)
+    #                solns.append(soln)
+    #                objs.append(obj)
+    #            new_endmem_fracs, new_converted_vars = solns[np.argmin(objs)]
+    #            assert new_endmem_fracs is not None
+    #            #fix any numerical issues with soln
+    #            new_endmem_fracs = np.maximum(new_endmem_fracs, 0)
+    #            new_endmem_fracs = new_endmem_fracs/(np.sum(new_endmem_fracs))
 
-                best_sign_combo = signcombos_to_try[np.argmin(objs)]
-                new_converted_vars = best_sign_combo*np.maximum(
-                                     (best_sign_combo*new_converted_vars), 0.0)
-            else:
-                new_endmem_fracs = endmem_fracs
-                new_converted_vars = converted_vars
+    #            best_sign_combo = signcombos_to_try[np.argmin(objs)]
+    #            new_converted_vars = best_sign_combo*np.maximum(
+    #                                 (best_sign_combo*new_converted_vars), 0.0)
+    #        else:
+    #            new_endmem_fracs = endmem_fracs
+    #            new_converted_vars = converted_vars
 
-            obj = obj_weights@np.concatenate(
-                   [new_endmem_fracs, new_converted_vars], axis=0) 
+    #        obj = obj_weights@np.concatenate(
+    #               [new_endmem_fracs, new_converted_vars], axis=0) 
 
-            new_perobs_endmember_fractions.append(new_endmem_fracs)
-            new_perobs_converted_vars.append(new_converted_vars)
-            perobs_obj.append(obj) 
+    #        new_perobs_endmember_fractions.append(new_endmem_fracs)
+    #        new_perobs_converted_vars.append(new_converted_vars)
+    #        perobs_obj.append(obj) 
 
-        return (np.array(new_perobs_endmember_fractions),
-                np.array(new_perobs_converted_vars),
-                np.array(perobs_obj))
+    #    return (np.array(new_perobs_endmember_fractions),
+    #            np.array(new_perobs_converted_vars),
+    #            np.array(perobs_obj))
 
     def iteratively_refine_ompa_soln(self, num_iterations):
         init_endmember_df = self.ompa_problem.construct_ideal_endmembers(
@@ -666,7 +666,8 @@ class OMPAProblem(object):
             assert np.allclose(mat.dot(ns), 0)
         return ns
 
-    def solve(self, endmember_df, endmember_name_column, batch_size=None):
+    def solve(self, endmember_df, endmember_name_column, batch_size=None,
+                    verbose=False):
 
         for param_name in self.param_names:
             assert param_name in endmember_df,\
@@ -716,10 +717,10 @@ class OMPAProblem(object):
             print("Std used for normalization:",param_std)
             print("Mean used for normalization:",param_mean)
 
-        #compute the nullspace of A - will be useful for disentangling
-        # ambiguity in the solution
-        nullspace_A = self.get_nullspace(M=endmem_mat,
-                                         R=conversion_ratio_rows)
+        ##compute the nullspace of A - will be useful for disentangling
+        ## ambiguity in the solution
+        #nullspace_A = self.get_nullspace(M=endmem_mat,
+        #                                 R=conversion_ratio_rows)
 
         #prepare b
         b = self.get_b()
@@ -765,7 +766,8 @@ class OMPAProblem(object):
                     conversion_sign_constraints=np.tile(
                         signcombo[None,:], (len(b),1)),
                     smoothness_lambda=None,
-                    batch_size=batch_size)
+                    batch_size=batch_size,
+                    verbose=verbose)
                 perobs_weighted_resid_sq_for_signcombo.append(
                     perobs_weighted_resid_sq_positiveconversionsign)
             #determine which conversion sign is best for each example
@@ -815,13 +817,14 @@ class OMPAProblem(object):
                     groupname_to_totalconvertedvariable,
                   groupname_to_effectiveconversionratios=
                     groupname_to_effectiveconversionratios,
-                  nullspace_A=nullspace_A)
+                  #nullspace_A=nullspace_A
+                )
 
     def batch_core_solve(self, A, b, num_converted_variables,
                    pairs_matrix, endmember_usagepenalty,
                    conversion_sign_constraints, smoothness_lambda,
                    batch_size,
-                   verbose=True):
+                   verbose=False):
         assert smoothness_lambda==0 or smoothness_lambda is None,(
             "Batch solving doesn't work for yet for nonzero/non-null"
             "smoothness lambda")
@@ -871,7 +874,7 @@ class OMPAProblem(object):
     def core_solve(self, A, b, num_converted_variables,
                    pairs_matrix, endmember_usagepenalty,
                    conversion_sign_constraints, smoothness_lambda,
-                   verbose=True):
+                   verbose=False):
   
         #We are going to solve the following problem:
         #P is the penalty matrix. It has dimensions of
@@ -909,7 +912,7 @@ class OMPAProblem(object):
                   x[:,num_endmembers:]) >= 0)
 
         prob = cp.Problem(obj, constraints)
-        prob.solve(verbose=False, max_iter=50000)
+        prob.solve(verbose=verbose, max_iter=50000)
         #settign verbose=True will generate more print statements and
         # slow down the analysis
         
