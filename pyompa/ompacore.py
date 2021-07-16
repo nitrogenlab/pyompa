@@ -767,6 +767,7 @@ class OMPAProblem(object):
                         signcombo[None,:], (len(b),1)),
                     smoothness_lambda=None,
                     batch_size=batch_size,
+                    max_iter=max_iter,
                     verbose=verbose)
                 perobs_weighted_resid_sq_for_signcombo.append(
                     perobs_weighted_resid_sq_positiveconversionsign)
@@ -823,8 +824,7 @@ class OMPAProblem(object):
     def batch_core_solve(self, A, b, num_converted_variables,
                    pairs_matrix, endmember_usagepenalty,
                    conversion_sign_constraints, smoothness_lambda,
-                   batch_size,
-                   verbose=False):
+                   batch_size, max_iter, verbose=False):
         assert smoothness_lambda==0 or smoothness_lambda is None,(
             "Batch solving doesn't work for yet for nonzero/non-null"
             "smoothness lambda")
@@ -874,7 +874,7 @@ class OMPAProblem(object):
     def core_solve(self, A, b, num_converted_variables,
                    pairs_matrix, endmember_usagepenalty,
                    conversion_sign_constraints, smoothness_lambda,
-                   verbose=False):
+                   max_iter, verbose=False):
   
         #We are going to solve the following problem:
         #P is the penalty matrix. It has dimensions of
@@ -912,7 +912,7 @@ class OMPAProblem(object):
                   x[:,num_endmembers:]) >= 0)
 
         prob = cp.Problem(obj, constraints)
-        prob.solve(verbose=verbose, max_iter=50000)
+        prob.solve(verbose=verbose, max_iter=max_iter)
         #settign verbose=True will generate more print statements and
         # slow down the analysis
         
