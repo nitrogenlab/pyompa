@@ -851,7 +851,7 @@ class OMPAProblem(object):
                 endmember_usagepenalty=endmember_usagepenalty[i:i+batch_size],
                 conversion_sign_constraints=
                  conversion_sign_constraints[i:i+batch_size],
-                smoothness_lambda=None, verbose=verbose)
+                smoothness_lambda=None, max_iter=max_iter, verbose=verbose)
             fixed_x.append(fixed_x_batch)
             endmember_fractions.append(endmember_fractions_batch)            
             if (num_converted_variables > 0):
