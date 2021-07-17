@@ -122,7 +122,7 @@ class ExportToCsvMixin(object):
         toexport_df_dict = OrderedDict()
 
         if (export_orig_param_vals):
-            orig_cols_to_include += self.param_names 
+            orig_cols_to_include = orig_cols_to_include+self.param_names 
 
         for orig_col in orig_cols_to_include:
             assert orig_col in self.obs_df, (
@@ -179,7 +179,6 @@ class ExportToCsvMixin(object):
         
         toexport_df = pd.DataFrame(toexport_df_dict)
         toexport_df.to_csv(csv_output_name, index=False)
-
 
 
 class OMPASoln(ExportToCsvMixin):
