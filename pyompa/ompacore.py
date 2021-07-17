@@ -31,66 +31,6 @@ class ExportToCsvMixin(object):
             groupname_to_effectiveconversionratios
         self.__dict__.update(kwargs)
 
-    @classmethod
-    def merge(cls, exptocsv1, exptocsv2):
-        assert (tuple(exptocsv1.param_names)
-                ==tuple(exptocsv2.param_names)) 
-
-        num_entries_exptocsv1 = exptocsv1.endmember_fractions.shape[0]
-        num_entries_exptocsv2 = exptocsv2.endmember_fractions.shape[0]
-        num_entries = num_entries_exptocsv1 + num_entries_exptocsv2 
-
-        #first get the new raw end-member names and the
-        # reformatted endmember_fractions matrix
-        new_endmember_names = sorted(
-            set(list(exptocsv1.endmember_names)
-                +list(exptocsv2.endmember_names)))
-        new_endmember_fractions =\
-            np.zeros((num_entries, len(new_endmember_names)))
-        for idx,endmember_name in enumerate(new_endmember_names):
-            if (endmember_name in exptocsv1.endmember_names):
-                new_endmember_fractions[0:num_entries_exptocsv1, idx] = (
-                    exptocsv1.endmember_fractions[:,
-                     exptocsv1.endmember_names.index(endmember_name)]) 
-            if (endmember_name in exptocsv2.endmember_names):
-                new_endmember_fractions[num_entries_exptocsv1:
-                 (num_entries_exptocsv1+num_entries_exptocsv2), idx] = (
-                    exptocsv2.endmember_fractions[:,
-                     exptocsv2.endmember_names.index(endmember_name)]) 
-
-        new_obsdf = pd.concat([exptocsv1.obs_df, exptocsv2.obs_df])
-
-        new_groupname_to_totalconvertedvariable = OrderedDict()
-        new_groupname_to_effectiveconversionratios = OrderedDict()
-        for groupname in exptocsv1.groupname_to_totalconvertedvariable:
-            new_groupname_to_totalconvertedvariable[groupname] =\
-                np.concatenate([
-                 exptocsv1.groupname_to_totalconvertedvariable[groupname],
-                 exptocsv2.groupname_to_totalconvertedvariable[groupname]
-                ], axis=0)
-            new_groupname_to_effectiveconversionratios[groupname] =\
-                OrderedDict()
-            for param_name in (
-                  exptocsv1.groupname_to_effectiveconversionratios[groupname]):
-                new_groupname_to_effectiveconversionratios[
-                  groupname][param_name] = (
-                    np.concatenate([
-                        exptocsv1.groupname_to_effectiveconversionratios[
-                          groupname][param_name],
-                        exptocsv2.groupname_to_effectiveconversionratios[
-                          groupname][param_name],
-                    ], axis=0)) 
-
-        return ExportToCsvMixin(
-                param_names=exptocsv1.param_names,
-                endmember_names=new_endmember_names,
-                endmember_fractions=new_endmember_fractions,
-                obs_df=new_obsdf,
-                groupname_to_totalconvertedvariable=
-                    new_groupname_to_totalconvertedvariable,
-                groupname_to_effectiveconversionratios=
-                    new_groupname_to_effectiveconversionratios)
-
     @property
     def endmember_names(self):
         return self._endmember_names
@@ -102,7 +42,8 @@ class ExportToCsvMixin(object):
             endmember_names=self.endmember_names) 
 
     #main assumed self attributes:
-    # param_names, endmember_names, obs_df, endmember_fractions,
+    # param_names, endmember_names, obs_df, param_residuals,
+    # endmember_fractions,
     # groupname_to_totalconvertedvariable,
     # groupname_to_effectiveconversionratios,
     #exporting the usage penalties also uses
@@ -179,6 +120,70 @@ class ExportToCsvMixin(object):
         
         toexport_df = pd.DataFrame(toexport_df_dict)
         toexport_df.to_csv(csv_output_name, index=False)
+
+    @classmethod
+    def merge(cls, exptocsv1, exptocsv2):
+        assert (tuple(exptocsv1.param_names)
+                ==tuple(exptocsv2.param_names)) 
+
+        num_entries_exptocsv1 = exptocsv1.endmember_fractions.shape[0]
+        num_entries_exptocsv2 = exptocsv2.endmember_fractions.shape[0]
+        num_entries = num_entries_exptocsv1 + num_entries_exptocsv2 
+
+        #first get the new raw end-member names and the
+        # reformatted endmember_fractions matrix
+        new_endmember_names = sorted(
+            set(list(exptocsv1.endmember_names)
+                +list(exptocsv2.endmember_names)))
+        new_endmember_fractions =\
+            np.zeros((num_entries, len(new_endmember_names)))
+        for idx,endmember_name in enumerate(new_endmember_names):
+            if (endmember_name in exptocsv1.endmember_names):
+                new_endmember_fractions[0:num_entries_exptocsv1, idx] = (
+                    exptocsv1.endmember_fractions[:,
+                     exptocsv1.endmember_names.index(endmember_name)]) 
+            if (endmember_name in exptocsv2.endmember_names):
+                new_endmember_fractions[num_entries_exptocsv1:
+                 (num_entries_exptocsv1+num_entries_exptocsv2), idx] = (
+                    exptocsv2.endmember_fractions[:,
+                     exptocsv2.endmember_names.index(endmember_name)]) 
+
+        new_param_residuals = np.concatenate([exptocsv1.param_residuals,
+                                exptocsv2.param_residuals], axis=0)
+
+        new_obsdf = pd.concat([exptocsv1.obs_df, exptocsv2.obs_df])
+
+        new_groupname_to_totalconvertedvariable = OrderedDict()
+        new_groupname_to_effectiveconversionratios = OrderedDict()
+        for groupname in exptocsv1.groupname_to_totalconvertedvariable:
+            new_groupname_to_totalconvertedvariable[groupname] =\
+                np.concatenate([
+                 exptocsv1.groupname_to_totalconvertedvariable[groupname],
+                 exptocsv2.groupname_to_totalconvertedvariable[groupname]
+                ], axis=0)
+            new_groupname_to_effectiveconversionratios[groupname] =\
+                OrderedDict()
+            for param_name in (
+                  exptocsv1.groupname_to_effectiveconversionratios[groupname]):
+                new_groupname_to_effectiveconversionratios[
+                  groupname][param_name] = (
+                    np.concatenate([
+                        exptocsv1.groupname_to_effectiveconversionratios[
+                          groupname][param_name],
+                        exptocsv2.groupname_to_effectiveconversionratios[
+                          groupname][param_name],
+                    ], axis=0)) 
+
+        return ExportToCsvMixin(
+                param_names=exptocsv1.param_names,
+                endmember_names=new_endmember_names,
+                param_residuals=new_param_residuals,
+                endmember_fractions=new_endmember_fractions,
+                obs_df=new_obsdf,
+                groupname_to_totalconvertedvariable=
+                    new_groupname_to_totalconvertedvariable,
+                groupname_to_effectiveconversionratios=
+                    new_groupname_to_effectiveconversionratios)
 
 
 class OMPASoln(ExportToCsvMixin):
