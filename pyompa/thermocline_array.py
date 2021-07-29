@@ -183,6 +183,7 @@ class ThermoclineArrayOMPAProblem(object):
                          obs_df=obs_df_for_range,
                          **self.ompa_core_params).solve(
                            endmember_df=endmember_df_for_range,
+                           endmember_name_column=endmember_name_column,
                            **ompa_core_solve_params)
             if (ompa_soln.status != "infeasible"):
                 thermocline_ompa_results.append(ompa_soln)
