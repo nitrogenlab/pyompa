@@ -149,7 +149,7 @@ class ThermoclineArrayOMPAProblem(object):
                   "as high as",np.max(self.obs_df[self.stratification_col]))
             print("==============================")
 
-    def solve(self, endmemname_to_df,
+    def solve(self, endmemname_to_df, endmember_name_column="endmember_name",
                     endmemnames_to_use=None,
                     **ompa_core_solve_params): 
         if (endmemnames_to_use is None):
