@@ -149,8 +149,9 @@ class ThermoclineArrayOMPAProblem(object):
                   "as high as",np.max(self.obs_df[self.stratification_col]))
             print("==============================")
 
-    def solve(self, endmemname_to_df, endmember_name_column="endmember_name",
-                    endmemnames_to_use=None): 
+    def solve(self, endmemname_to_df,
+                    endmemnames_to_use=None,
+                    **ompa_core_solve_params): 
         if (endmemnames_to_use is None):
             endmemnames_to_use = sorted(endmemname_to_df.keys())
         thermocline_ompa_results = []
@@ -179,10 +180,10 @@ class ThermoclineArrayOMPAProblem(object):
             #Now that you have the data frames for the observations and
             # end members, you can define the ompa problem
             ompa_soln = OMPAProblem(
-                obs_df=obs_df_for_range, 
-                **self.ompa_core_params).solve(
-                    endmember_df=endmember_df_for_range,
-                    endmember_name_column=endmember_name_column)
+                         obs_df=obs_df_for_range,
+                         **self.ompa_core_params).solve(
+                           endmember_df=endmember_df_for_range,
+                           **ompa_core_solve_params)
             if (ompa_soln.status != "infeasible"):
                 thermocline_ompa_results.append(ompa_soln)
             else:
