@@ -1,5 +1,5 @@
 from __future__ import division, print_function
-from .ompacore import OMPAProblem, ExportToCsvMixin
+from .ompacore import OMPAProblem, ExportToCsvMixin, OMPASoln
 import numpy as np
 import pandas as pd
 from collections import OrderedDict
@@ -104,8 +104,10 @@ class ThermoclineArraySoln(ExportToCsvMixin):
 
     def core_quantify_ambiguity_via_residual_limits(self, *args, **kwargs):
 
-        solns = [x.core_quantify_ambiguity_via_residual_limits(*args, **kwargs)
-                 for x in self] 
+        solns = [
+         OMPASoln.core_quantify_ambiguity_via_residual_limits(
+          x, *args, **kwargs)
+         for x in self] 
         to_return =  ThermoclineArraySoln(
                     endmemname_to_df=self.endmemname_to_df,
                     endmember_name_column=self.endmember_name_column,
