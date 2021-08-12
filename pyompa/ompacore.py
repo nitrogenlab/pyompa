@@ -43,7 +43,7 @@ class ExportToCsvMixin(object):
 
     def insert_blank_endmembers_as_needed(self, new_endmember_names):
         new_endmember_fractions =\
-            np.zeros((len(self.obsdf), len(new_endmember_names)))
+            np.zeros((len(self.obs_df), len(new_endmember_names)))
         for idx,endmember_name in enumerate(new_endmember_names):
             if (endmember_name in self.endmember_names):
                 new_endmember_fractions[:, idx] = (
@@ -54,7 +54,7 @@ class ExportToCsvMixin(object):
                 endmember_names=new_endmember_names,
                 param_residuals=self.param_residuals,
                 endmember_fractions=new_endmember_fractions,
-                obs_df=self.obsdf,
+                obs_df=self.obs_df,
                 groupname_to_totalconvertedvariable=
                     self.groupname_to_totalconvertedvariable,
                 groupname_to_effectiveconversionratios=
