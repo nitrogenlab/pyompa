@@ -72,7 +72,8 @@ class ExportToCsvMixin(object):
                 groupname_to_totalconvertedvariable=
                     self.groupname_to_totalconvertedvariable,
                 groupname_to_effectiveconversionratios=
-                    self.groupname_to_effectiveconversionratios)
+                    self.groupname_to_effectiveconversionratios,
+                ompa_problem=self.ompa_problem)
 
     #main assumed self attributes:
     # param_names, endmember_names, obs_df, param_residuals,
