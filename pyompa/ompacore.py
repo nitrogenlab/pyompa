@@ -41,6 +41,25 @@ class ExportToCsvMixin(object):
         self.endmembername_to_indices = get_endmember_idx_mapping(
             endmember_names=self.endmember_names) 
 
+    def insert_blank_endmembers_as_needed(self, new_endmember_names):
+        new_endmember_fractions =\
+            np.zeros((num_entries, len(new_endmember_names)))
+        for idx,endmember_name in enumerate(new_endmember_names):
+            if (endmember_name in self.endmember_names):
+                new_endmember_fractions[:, idx] = (
+                    self.endmember_fractions[:,
+                     self.endmember_names.index(endmember_name)]) 
+        return ExportToCsvMixin(
+                param_names=self.param_names,
+                endmember_names=new_endmember_names,
+                param_residuals=self.param_residuals,
+                endmember_fractions=new_endmember_fractions,
+                obs_df=self.obsdf,
+                groupname_to_totalconvertedvariable=
+                    self.groupname_to_totalconvertedvariable,
+                groupname_to_effectiveconversionratios=
+                    self.groupname_to_effectiveconversionratios)
+
     #main assumed self attributes:
     # param_names, endmember_names, obs_df, param_residuals,
     # endmember_fractions,

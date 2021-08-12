@@ -19,6 +19,7 @@ def get_endmember_df_for_range(endmemnames_to_use,
     correct_rows = []
     bin_start = np.round(bin_start, decimals=2)
     bin_end = np.round(bin_end, decimals=2)
+    endmem_names_present = []
     for endmemname in endmemnames_to_use:
         #apply a filtering to endmemname_to_df to get the right
         # row corresponding to the range
@@ -27,6 +28,10 @@ def get_endmember_df_for_range(endmemnames_to_use,
             df[(df[stratification_col] >= bin_start) &
                (df[stratification_col] < bin_end)])
         correct_rows_for_endmemname[endmember_name_column] = endmemname
+        if len(correct_rows_for_endmemname)==0:
+            continue
+        else:
+            endmem_names_present.append(endmemname) 
         #correct_rows_for_endmemname should have a length of 1 (there should
         # be only one row for each bin), so let's verify that with
         # an 'assert' statement.
@@ -42,7 +47,7 @@ def get_endmember_df_for_range(endmemnames_to_use,
     # columns correctly.
     paired_up_endmember_df = pd.concat(correct_rows) 
 
-    return paired_up_endmember_df
+    return paired_up_endmember_df, endmem_names_present
 
 
 class ThermoclineArraySoln(ExportToCsvMixin):
@@ -152,15 +157,17 @@ class ThermoclineArrayOMPAProblem(object):
     def solve(self, endmemname_to_df, endmember_name_column="endmember_name",
                     endmemnames_to_use=None,
                     **ompa_core_solve_params): 
+
         if (endmemnames_to_use is None):
             endmemnames_to_use = sorted(endmemname_to_df.keys())
+
         thermocline_ompa_results = []
         for bin_start in np.arange(self.tc_lower_bound,
                                    self.tc_upper_bound, self.tc_step):
             bin_end = bin_start + self.tc_step
             #Get the endmember dataframe for OMPA analysis corresponding to the
             #range 
-            endmember_df_for_range =\
+            endmember_df_for_range, endmem_names_present =\
               get_endmember_df_for_range(
                   stratification_col=self.stratification_col,
                   endmemnames_to_use=endmemnames_to_use,
@@ -179,24 +186,35 @@ class ThermoclineArrayOMPAProblem(object):
             
             #Now that you have the data frames for the observations and
             # end members, you can define the ompa problem
-            ompa_soln = OMPAProblem(
-                         obs_df=obs_df_for_range,
-                         **self.ompa_core_params).solve(
-                           endmember_df=endmember_df_for_range,
-                           **ompa_core_solve_params)
-            if (ompa_soln.status != "infeasible"):
-                thermocline_ompa_results.append(ompa_soln)
-            else:
-                print("Warning! Infeasible for:")
-                print("obs df:")
-                cols_to_print = (
-                 [x[0] for x in thermocline_paramsandweighting[0]]
-                 +[x[0] for x in thermocline_paramsandweighting[1]]
-                 +[self.stratification_col])
-                print(obs_df_for_range[cols_to_print])
-                print("endmember df:")
-                print(endmember_df_for_range[cols_to_print])
-                print("Try lowering the parameter weights!")
+            #Do one observation at a time so that if the problem is infeasible
+            # we don't lose more observations than needed
+            for one_obs in obs_df_for_range.iterrows():
+                try:
+                    ompa_soln = OMPAProblem(
+                                 obs_df=one_obs,
+                                 **self.ompa_core_params).solve(
+                                   endmember_df=endmember_df_for_range,
+                                   **ompa_core_solve_params)
+
+                    if (ompa_soln.status != "infeasible"):
+                        thermocline_ompa_results.append(
+                            ompa_soln.insert_blank_endmembers_as_needed(
+                                       new_endmember_names=endmemnames_to_use))
+                    else:
+                        print("Warning! Infeasible for:")
+                        print("obs df:")
+                        cols_to_print = self.ompa_core_params['param_names']
+                        print(one_obs[cols_to_print])
+                        print("endmember df:")
+                        print(endmember_df_for_range[cols_to_print])
+                        print("Try lowering the parameter weights!")
+                except SolverError as e:
+                    print("Encountered SolverError "+str(e))
+                    print("obs df:")
+                    cols_to_print = self.ompa_core_params['param_names']  
+                    print(one_obs[cols_to_print])
+                    print("endmember df:")
+                    print(endmember_df_for_range[cols_to_print])
 
         self.thermocline_ompa_results = thermocline_ompa_results
 
