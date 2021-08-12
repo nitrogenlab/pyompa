@@ -3,6 +3,7 @@ from .ompacore import OMPAProblem, ExportToCsvMixin
 import numpy as np
 import pandas as pd
 from collections import OrderedDict
+from cvxpy.error import SolverError
 
 
 def get_endmember_df_for_range(endmemnames_to_use,
