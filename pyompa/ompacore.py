@@ -44,18 +44,22 @@ class ExportToCsvMixin(object):
     def insert_blank_endmembers_as_needed(self, new_endmember_names):
         new_endmember_fractions =\
             np.zeros((len(self.obs_df), len(new_endmember_names)))
-        new_endmembername_to_usagepenalty = OrderedDict()
         for idx,endmember_name in enumerate(new_endmember_names):
             if (endmember_name in self.endmember_names):
                 new_endmember_fractions[:, idx] = (
                     self.endmember_fractions[:,
                      self.endmember_names.index(endmember_name)]) 
+
+        new_endmembername_to_usagepenalty = OrderedDict()
+        for idx,endmember_name in enumerate(new_endmember_names):
+            if (endmember_name in self.endmembername_to_usagepenalty):
                 new_endmembername_to_usagepenalty[endmember_name] =\
                     self.endmembername_to_usagepenalty[endmember_name]
             else:
                 nan_vec = np.empty((len(self.obs_df),))
                 nan_vec[:] = np.NaN 
                 new_endmembername_to_usagepenalty[endmember_name] = nan_vec
+
         return ExportToCsvMixin(
                 param_names=self.param_names,
                 endmember_names=new_endmember_names,
