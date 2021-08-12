@@ -63,17 +63,23 @@ class ThermoclineArraySoln(ExportToCsvMixin):
         self.thermocline_ompa_problem = thermocline_ompa_problem
         self.thermocline_ompa_results = thermocline_ompa_results
 
+        #expand solution objects to included full set of endmembers
+        fullsetendmembers_self = [
+            x.insert_blank_endmembers_as_needed(
+                new_endmember_names=endmemnames_to_use)
+            for x in self]
+
         #get attributes in a format that is compatible with the API
         # of OMPASoln, for plotting and csv export purposes
-        self.obs_df = pd.concat([x.obs_df for x in self])
+        self.obs_df = pd.concat([x.obs_df for x in fullsetendmembers_self])
         self.endmember_names = self[0].endmember_names
         self.param_names = self[0].param_names
         self.endmember_fractions = np.concatenate([
-            x.endmember_fractions for x in self], axis=0) 
+            x.endmember_fractions for x in fullsetendmembers_self], axis=0) 
         self.converted_variables = np.concatenate([
-            x.converted_variables for x in self], axis=0)
+            x.converted_variables for x in fullsetendmembers_self], axis=0)
         self.param_residuals = np.concatenate([
-            x.param_residuals for x in self], axis=0)
+            x.param_residuals for x in fullsetendmembers_self], axis=0)
         #getting the groupname_to_xxx attributes ready
         self.groupname_to_totalconvertedvariable = OrderedDict()
         self.groupname_to_effectiveconversionratios = OrderedDict()
@@ -97,10 +103,9 @@ class ThermoclineArraySoln(ExportToCsvMixin):
         #getting endmembername to usage penalty
         self.endmembername_to_usagepenalty = OrderedDict()
         for endmembername in self.endmember_names:
-            if endmembername in self[0].endmembername_to_usagepenalty: 
-                self.endmembername_to_usagepenalty[endmembername] =\
-                np.concatenate([x.endmembername_to_usagepenalty[endmembername]
-                                for x in self], axis=0) 
+            self.endmembername_to_usagepenalty[endmembername] =\
+             np.concatenate([x.endmembername_to_usagepenalty[endmembername]
+                             for x in fullsetendmembers_self], axis=0) 
 
     def core_quantify_ambiguity_via_residual_limits(self, *args, **kwargs):
 
@@ -203,8 +208,7 @@ class ThermoclineArrayOMPAProblem(object):
 
                     if (ompa_soln.status != "infeasible"):
                         thermocline_ompa_results.append(
-                            ompa_soln.insert_blank_endmembers_as_needed(
-                                       new_endmember_names=endmemnames_to_use))
+                            ompa_soln)
                     else:
                         print("Warning! Infeasible for:")
                         print("obs df:")
