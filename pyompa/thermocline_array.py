@@ -190,7 +190,7 @@ class ThermoclineArrayOMPAProblem(object):
             #Do one observation at a time so that if the problem is infeasible
             # we don't lose more observations than needed
             for rowidx,one_obs in obs_df_for_range.iterrows():
-                one_obs = one_obs.to_frame()
+                one_obs = one_obs.to_frame().transpose()
                 print(one_obs)
                 try:
                     ompa_soln = OMPAProblem(
