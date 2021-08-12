@@ -54,6 +54,7 @@ class ExportToCsvMixin(object):
                 endmember_names=new_endmember_names,
                 param_residuals=self.param_residuals,
                 endmember_fractions=new_endmember_fractions,
+                converted_variables=self.converted_variables,
                 obs_df=self.obs_df,
                 groupname_to_totalconvertedvariable=
                     self.groupname_to_totalconvertedvariable,
@@ -169,6 +170,9 @@ class ExportToCsvMixin(object):
 
         new_param_residuals = np.concatenate([exptocsv1.param_residuals,
                                 exptocsv2.param_residuals], axis=0)
+        new_converted_variables = np.concatenate([
+                                   exptocsv1.converted_variables,
+                                   exptocsv2.converted_variables], axis=0)
 
         new_obsdf = pd.concat([exptocsv1.obs_df, exptocsv2.obs_df])
 
@@ -198,6 +202,7 @@ class ExportToCsvMixin(object):
                 endmember_names=new_endmember_names,
                 param_residuals=new_param_residuals,
                 endmember_fractions=new_endmember_fractions,
+                converted_variables=converted_variables,
                 obs_df=new_obsdf,
                 groupname_to_totalconvertedvariable=
                     new_groupname_to_totalconvertedvariable,
