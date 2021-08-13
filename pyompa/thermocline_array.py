@@ -115,7 +115,7 @@ class ThermoclineArraySoln(ExportToCsvMixin):
             maximizing_obj = np.zeros((
                 len(orig_soln.endmember_names) +
                 orig_soln.ompa_problem.num_converted_variables,)) 
-            for endmemtypeoverallidx, (endmembername, endmemtype_idxs)\
+            for endmemtypeoverallidx, (endmemtypename, endmemtype_idxs)\
                 in enumerate(orig_soln.endmembername_to_indices.items()):
                 if (endmemtypename in endmemtypename_to_weight):
                      maximizing_obj[endmemtype_idxs] =\
