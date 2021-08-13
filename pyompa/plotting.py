@@ -51,7 +51,7 @@ def plot_endmember_fractions(xaxis_vals, xaxis_label, yaxis_vals, yaxis_label,
                 sum([len(x) for x in
                      groupname_to_effectiveconversionratios.values()]))
     fig, ax = plt.subplots(nrows=1, ncols=num_figs,
-                           figsize=(3*num_figs,2))
+                           figsize=(5*num_figs,4))
     for i in range(num_endmembers):
         plt.sca(ax[i])
         plt.scatter(xaxis_vals, yaxis_vals, c=endmember_fractions[:,i])
