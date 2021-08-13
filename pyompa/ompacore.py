@@ -216,7 +216,7 @@ class ExportToCsvMixin(object):
                 endmember_names=new_endmember_names,
                 param_residuals=new_param_residuals,
                 endmember_fractions=new_endmember_fractions,
-                converted_variables=converted_variables,
+                converted_variables=new_converted_variables,
                 obs_df=new_obsdf,
                 groupname_to_totalconvertedvariable=
                     new_groupname_to_totalconvertedvariable,
