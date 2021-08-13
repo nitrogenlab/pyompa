@@ -72,7 +72,7 @@ class ThermoclineArraySoln(ExportToCsvMixin):
         #get attributes in a format that is compatible with the API
         # of OMPASoln, for plotting and csv export purposes
         self.obs_df = pd.concat([x.obs_df for x in fullsetendmembers_self])
-        self.endmember_names = self[0].endmember_names
+        self.endmember_names = fullsetendmembers_self[0].endmember_names
         self.param_names = self[0].param_names
         self.endmember_fractions = np.concatenate([
             x.endmember_fractions for x in fullsetendmembers_self], axis=0) 
