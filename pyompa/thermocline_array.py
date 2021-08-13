@@ -107,6 +107,36 @@ class ThermoclineArraySoln(ExportToCsvMixin):
              np.concatenate([x.endmembername_to_usagepenalty[endmembername]
                              for x in fullsetendmembers_self], axis=0) 
 
+    def with_endmemtype_names_quant_ambig_via_res_lim(self,
+              endmemtypename_to_weight, *args, **kwargs):
+
+        solns = []
+        for orig_soln in self:
+            maximizing_obj = np.zeros((
+                len(orig_soln.endmember_names) +
+                orig_soln.ompa_problem.num_converted_variables,)) 
+            for endmemtypeoverallidx, (endmembername, endmemtype_idxs)\
+                in enumerate(orig_soln.endmembername_to_indices.items()):
+                if (endmemtypename in endmemtypename_to_weight):
+                     maximizing_obj[endmemtype_idxs] =\
+                        endmemtypename_to_weight[endmemtypename]
+            ompasoln_max =\
+                OMPASoln.core_quantify_ambiguity_via_residual_limits(
+                         *args,
+                         self=orig_soln,
+                         obj_weights=maximizing_obj,
+                         **kwargs)
+            solns.append(ompasoln_max)
+
+        to_return =  ThermoclineArraySoln(
+                endmemname_to_df=self.endmemname_to_df,
+                endmember_name_column=self.endmember_name_column,
+                endmemnames_to_use=self.endmemnames_to_use,
+                thermocline_ompa_problem=None,
+                thermocline_ompa_results=solns) 
+
+        return to_return
+
     def core_quantify_ambiguity_via_residual_limits(self, *args, **kwargs):
 
         solns = [
