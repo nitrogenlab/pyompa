@@ -41,7 +41,7 @@ class ExportToCsvMixin(object):
         self.endmembername_to_indices = get_endmember_idx_mapping(
             endmember_names=self.endmember_names) 
 
-    def get_predicted_conserved_prop_vals(endmember_to_property):
+    def get_predicted_conserved_prop_vals(self, endmember_to_property):
         #endmember_to_property is a dict 
         property_vec = np.array([endmember_to_property[endmember_name]
                                  for endmember_name in self.endmember_names])
