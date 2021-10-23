@@ -12,7 +12,6 @@ def get_exponential_from_bounds_func(alpha, beta,
     assert upperbound > lowerbound, (upperbound, lowerbound)
     def func(x):
         print(np)
-        assert False
         return np.minimum(magnitudelimit, beta*(np.exp(
         alpha*np.maximum(0, np.maximum(lowerbound-x, x-upperbound)))-1))
     return func
