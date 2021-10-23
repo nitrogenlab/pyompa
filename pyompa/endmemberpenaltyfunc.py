@@ -10,10 +10,14 @@ def get_exponential_from_bounds_func(alpha, beta,
     #the magnitude limit is there to prevent problems with condition number
     # and optimization later on
     assert upperbound > lowerbound, (upperbound, lowerbound)
-    print(np)
-    assert False
-    return lambda x: np.minimum(magnitudelimit, beta*(np.exp(
+    def func(x):
+        print(np)
+        assert False
+        return np.minimum(magnitudelimit, beta*(np.exp(
         alpha*np.maximum(0, np.maximum(lowerbound-x, x-upperbound)))-1))
+    return func
+    #return lambda x: np.minimum(magnitudelimit, beta*(np.exp(
+    #    alpha*np.maximum(0, np.maximum(lowerbound-x, x-upperbound)))-1))
 
 
 #same as get_exponential_from_bounds_func but with defaults for alpha and beta
