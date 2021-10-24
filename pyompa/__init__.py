@@ -4,6 +4,7 @@ from . import thermocline_array
 from . import endmemberpenaltyfunc
 from . import plotting
 from . import parse_config
+from . import util
 from .ompacore import OMPAProblem, ConvertedParamGroup
 from .thermocline_array import ThermoclineArrayOMPAProblem 
 from .endmemberpenaltyfunc import EndMemExpPenaltyFunc
