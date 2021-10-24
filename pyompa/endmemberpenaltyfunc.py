@@ -23,7 +23,7 @@ def get_exponential_from_bounds_func(alpha, beta,
         print((alpha*np.maximum(0, np.maximum(lowerbound-x, x-upperbound))).dtype)
         print(np.exp(alpha*np.maximum(0, np.maximum(lowerbound-x, x-upperbound))))
         return np.minimum(magnitudelimit, beta*(np.exp(
-        alpha*np.maximum(0, np.maximum(lowerbound-x, x-upperbound)))-1))
+         alpha*np.maximum(0, np.maximum(lowerbound-x, x-upperbound)))-1))
     return func
     #return lambda x: np.minimum(magnitudelimit, beta*(np.exp(
     #    alpha*np.maximum(0, np.maximum(lowerbound-x, x-upperbound)))-1))
