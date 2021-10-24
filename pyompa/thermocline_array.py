@@ -228,8 +228,6 @@ class ThermoclineArrayOMPAProblem(object):
             # we don't lose more observations than needed
             for rowidx in range(len(obs_df_for_range)):
                 one_obs = obs_df_for_range.iloc[rowidx:rowidx+1]
-                print(one_obs)
-                print(one_obs['lat'])
                 try:
                     ompa_soln = OMPAProblem(
                                  obs_df=one_obs,
