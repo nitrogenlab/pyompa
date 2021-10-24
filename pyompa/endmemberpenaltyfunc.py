@@ -48,9 +48,6 @@ def get_combined_penalty_func(colname_to_penaltyfunc):
                +str(colname)+" as a column, but no such column is present in"
                +" the observations data frame; the available column headers"
                +" in the observations data frame are "+str(df.columns))
-            print(colname)
-            print(df[colname])
-            print(np.array(df[colname]).dtype)
             values = np.array(df[colname])
             penalty = penaltyfunc(values) 
             if (total_penalty is None):
