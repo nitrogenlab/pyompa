@@ -227,7 +227,7 @@ class ThermoclineArrayOMPAProblem(object):
             #Do one observation at a time so that if the problem is infeasible
             # we don't lose more observations than needed
             for rowidx in range(len(obs_df_for_range)):
-                one_obs = obs_df_for_range.iloc[row_idx:row_idx+1]
+                one_obs = obs_df_for_range.iloc[rowidx:rowidx+1]
                 print(one_obs)
                 print(one_obs['lat'])
                 try:
