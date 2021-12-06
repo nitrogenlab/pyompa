@@ -263,7 +263,8 @@ class OMPASoln(ExportToCsvMixin):
         self.__dict__.update(kwargs)
 
     def core_quantify_ambiguity_via_residual_limits(self,
-        obj_weights, max_resids, target_endmem_fracs=None, verbose=False):
+        obj_weights, max_resids, target_endmem_fracs=None, verbose=False,
+        max_iter=100000):
         #obj_weights can either be a single vector (e.g. for minimization/
         # maximization), or a matrix (for trying to find a solution
         # that resembels a target soln e.g. one obtained from OCIM
@@ -380,7 +381,7 @@ class OMPASoln(ExportToCsvMixin):
                          )
 
                 prob = cp.Problem(obj, constraints)
-                prob.solve(verbose=verbose, max_iter=100000)
+                prob.solve(verbose=verbose, max_iter=max_iter)
 
                 if (prob.value < np.inf):
                     new_endmem_fracs = x.value[:num_endmembers]
