@@ -263,8 +263,18 @@ class OMPASoln(ExportToCsvMixin):
         self.__dict__.update(kwargs)
 
     def core_quantify_ambiguity_via_residual_limits(self,
-        obj_weights, max_resids, verbose=False):
-
+        obj_weights, max_resids, target_endmem_fracs=None, verbose=False):
+        #obj_weights can either be a single vector (e.g. for minimization/
+        # maximization), or a matrix (for trying to find a solution
+        # that resembels a target soln e.g. one obtained from OCIM
+        if (target_fractions is not None):
+            assert len(obj_weights.shape)==2
+            assert np.min(obj_weights)==0
+            assert np.max(obj_weights)==1
+            #obj_weights should have one row per endmember
+            assert len(obj_weights)==len(self.endmember_names)
+            assert target_endmem_fracs.shape[1]==obj_weights.shape[1]
+            assert target_endmem_fracs.shape[0]==len(self.endmember_fractions)
         endmember_names = self.endmember_names
         endmember_usagepenalty =\
             self.ompa_problem.prep_endmember_usagepenalty_mat(endmember_names)
@@ -282,10 +292,15 @@ class OMPASoln(ExportToCsvMixin):
             omp_A = np.concatenate([endmem_mat, conversion_ratio_rows], axis=0)
         else:
             omp_A = endmem_mat
+
+        if (target_endmem_fracs is not None):
+            assert obj_weights.shape[1] == omp_A.shape[0] 
+        else:
+            assert len(obj_weights) == omp_A.shape[0]
         #prepare original b
         omp_b = self.ompa_problem.get_b() 
 
-        #For each observation, we can solve the linear program
+        #For each observation, we can solve a convex objective
         new_perobs_endmember_fractions = []
         if (num_converted_variables > 0):
             new_perobs_converted_vars = []
@@ -309,8 +324,6 @@ class OMPASoln(ExportToCsvMixin):
             obs_upper_resids = np.maximum(max_resids, obs_orig_resid)
             obs_lower_resids = np.minimum(-max_resids, obs_orig_resid)
 
-            assert len(obj_weights) == omp_A.shape[0]
-
             def compute_soln(converted_vars_signs):
 
                 #non-negativity of water mass fractions, as well as converted
@@ -321,15 +334,22 @@ class OMPASoln(ExportToCsvMixin):
                            if num_converted_variables > 0 else []))
 
                 A_ub = np.concatenate(
-                  #usage penalty capped at original
-                  [np.concatenate([obs_usagepenalty,
-                                   np.zeros(num_converted_variables)])[None,:]]
+                  #usage penalty capped at original - but only if
+                  # target_endmem_fracs is not specified
+                  ([np.concatenate(
+                     [obs_usagepenalty,
+                      np.zeros(num_converted_variables)])[None,:]]
+                   if target_endmem_fracs is None else [])
                   #positive residual cap, negative residual cap
                   + [omp_A.T, -omp_A.T]
                   )
-                b_ub = np.concatenate([
-                    #usage penalty - capped at original
-                    np.array([np.sum(obs_orig_endmem_fracs*obs_usagepenalty)]),
+                b_ub = np.concatenate(
+                    #usage penalty - capped at original (again, only if
+                    # target_endmem_fracs is not specified)
+                   ([np.array([
+                       np.sum(obs_orig_endmem_fracs*obs_usagepenalty)])]
+                    if target_endmem_fracs is None else [])
+                   + [
                     #positive residual cap
                     obs_b + obs_upper_resids,
                     #negative residual cap 
@@ -343,11 +363,15 @@ class OMPASoln(ExportToCsvMixin):
                 b_eq = np.array([1])
 
                 x = cp.Variable(shape=(A_ub.shape[1]))
-                obj = cp.Minimize(cp.sum(obj_weights@x))
+                if (target_endmem_fracs is None):
+                    obj = cp.Minimize(cp.sum(obj_weights@x))
+                else:
+                    obj = cp.Minimize(cp.sum_squares(
+                                obj_weights@x - target_endmem_fracs[obs_idx]))
 
                 constraints = ([A_ub@x <= b_ub,
                                 A_eq@x == b_eq,
-                                x[:num_endmembers] >= 0] #non-negativit
+                                x[:num_endmembers] >= 0] #non-negativity
                                 #converted variable signs
                            +([(var >= 0 if converted_var_sign > 0 else
                                var <= 0) for var,converted_var_sign in
@@ -974,6 +998,7 @@ class OMPAProblem(object):
 
     def core_solve(self, A, b, num_converted_variables,
                    pairs_matrix, endmember_usagepenalty,
+                   endmember_idealvalsmat,
                    conversion_sign_constraints, smoothness_lambda,
                    max_iter, verbose=False):
   
@@ -992,8 +1017,8 @@ class OMPAProblem(object):
         x = cp.Variable(shape=(len(b), len(A)))
         obj = (cp.sum_squares(x@A - b) +
                 cp.sum_squares(cp.atoms.affine.binary_operators.multiply(
-                                    x[:,:num_endmembers],
-                                    endmember_usagepenalty) ))
+                            (x[:,:num_endmembers] - endmember_idealvalsmat),
+                            endmember_usagepenalty) ))
         if (smoothness_lambda is not None):
             #leave out O2 deficit column from the smoothness penality as it's
             # on a bit of a different scale.
