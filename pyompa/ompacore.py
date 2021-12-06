@@ -310,6 +310,9 @@ class OMPASoln(ExportToCsvMixin):
         new_perobs_resid = []
         perobs_obj = []
         for obs_idx in range(len(self.endmember_fractions)):
+            if (self.verbose):
+                print("On obs",obs_idx,"out of",len(self.endmember_fractions))
+                sys.stdout.flush()
             obs_orig_endmem_fracs = self.endmember_fractions[obs_idx] 
             assert num_endmembers==len(endmember_names)
             if (num_converted_variables > 0):
