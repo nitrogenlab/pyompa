@@ -267,7 +267,7 @@ class OMPASoln(ExportToCsvMixin):
         #obj_weights can either be a single vector (e.g. for minimization/
         # maximization), or a matrix (for trying to find a solution
         # that resembels a target soln e.g. one obtained from OCIM
-        if (target_fractions is not None):
+        if (target_endmem_fracs is not None):
             assert len(obj_weights.shape)==2
             assert np.min(obj_weights)==0
             assert np.max(obj_weights)==1
