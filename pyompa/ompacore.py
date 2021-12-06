@@ -393,7 +393,7 @@ class OMPASoln(ExportToCsvMixin):
                         new_endmem_fracs = None
                         new_converted_vars = None
                 except cp.SolverError as e:
-                        return (None, None, np.inf)
+                        return ((None, None), np.inf)
 
                 return ((new_endmem_fracs, new_converted_vars),
                         prob.value) #soln and optimal value
