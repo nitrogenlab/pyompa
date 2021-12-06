@@ -384,14 +384,17 @@ class OMPASoln(ExportToCsvMixin):
                          )
 
                 prob = cp.Problem(obj, constraints)
-                prob.solve(verbose=verbose, max_iter=max_iter)
-
-                if (prob.value < np.inf):
-                    new_endmem_fracs = x.value[:num_endmembers]
-                    new_converted_vars = x.value[num_endmembers:] 
-                else:
-                    new_endmem_fracs = None
-                    new_converted_vars = None
+                try:
+                    prob.solve(verbose=verbose, max_iter=max_iter)
+                    if (prob.value < np.inf):
+                        new_endmem_fracs = x.value[:num_endmembers]
+                        new_converted_vars = x.value[num_endmembers:] 
+                    else:
+                        new_endmem_fracs = None
+                        new_converted_vars = None
+                except cp.SolverError as e:
+                        new_endmem_fracs = None
+                        new_converted_vars = None
 
                 return ((new_endmem_fracs, new_converted_vars),
                         prob.value) #soln and optimal value
