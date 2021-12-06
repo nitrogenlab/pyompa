@@ -407,6 +407,10 @@ class OMPASoln(ExportToCsvMixin):
                 solns.append(soln)
                 objs.append(obj)
             new_endmem_fracs, new_converted_vars = solns[np.argmin(objs)]
+            if (new_endmem_fracs is None):
+                print("Warning: solver didn't find a soln, using original")
+                new_endmem_fracs = obs_orig_endmem_fracs
+                new_converted_vars = obs_orig_converted_vars
             assert new_endmem_fracs is not None
             assert np.abs(np.sum(new_endmem_fracs) - 1) < 1e-5,\
                 np.sum(new_endmem_fracs) 
