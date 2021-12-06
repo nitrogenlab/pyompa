@@ -272,7 +272,7 @@ class OMPASoln(ExportToCsvMixin):
             assert np.min(obj_weights)==0
             assert np.max(obj_weights)==1
             #obj_weights should have one row per endmember
-            assert len(obj_weights)==len(self.endmember_names)
+            assert len(obj_weights)==len(self.endmembername_to_indices)
             assert target_endmem_fracs.shape[1]==obj_weights.shape[1]
             assert target_endmem_fracs.shape[0]==len(self.endmember_fractions)
         endmember_names = self.endmember_names
