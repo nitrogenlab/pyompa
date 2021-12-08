@@ -1008,7 +1008,6 @@ class OMPAProblem(object):
 
     def core_solve(self, A, b, num_converted_variables,
                    pairs_matrix, endmember_usagepenalty,
-                   endmember_idealvalsmat,
                    conversion_sign_constraints, smoothness_lambda,
                    max_iter, verbose=False):
   
@@ -1027,7 +1026,7 @@ class OMPAProblem(object):
         x = cp.Variable(shape=(len(b), len(A)))
         obj = (cp.sum_squares(x@A - b) +
                 cp.sum_squares(cp.atoms.affine.binary_operators.multiply(
-                            (x[:,:num_endmembers] - endmember_idealvalsmat),
+                            x[:,:num_endmembers],
                             endmember_usagepenalty) ))
         if (smoothness_lambda is not None):
             #leave out O2 deficit column from the smoothness penality as it's
