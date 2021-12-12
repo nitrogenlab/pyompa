@@ -385,7 +385,10 @@ class OMPASoln(ExportToCsvMixin):
 
                 prob = cp.Problem(obj, constraints)
                 try:
-                    prob.solve(verbose=False, max_iter=max_iter)
+                    if (target_endmem_fracs is None):
+                        prob.solve(verbose=False)
+                    else:
+                        prob.solve(verbose=False, max_iter=max_iter)
                     if (prob.value < np.inf):
                         new_endmem_fracs = x.value[:num_endmembers]
                         new_converted_vars = x.value[num_endmembers:] 
