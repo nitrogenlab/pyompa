@@ -79,7 +79,7 @@ def get_combined_penalty_func(colname_to_penaltyfunc):
     return penalty_func
 
 
-class PenaltyFunc(object)
+class AbstractPenaltyFunc(object)
 
     def __init__(self, spec):
         self.spec = spec 
@@ -113,19 +113,23 @@ class PenaltyFunc(object)
         self.penalty_func = get_combined_penalty_func(colname_to_penaltyfunc)
 
 
-class LinearPenaltyFunc(object):
+class GeneralPenaltyFunc(AbstractPenaltyFunc):
 
     SPECTYPE_TO_FACTORYFUNC = {
-        'density_default': get_default_density_linear_penalty_func,
-        'latlon_default': get_default_latlon_linear_penalty_func,
-        'depth_default': get_default_depth_linear_penalty_func,
-        'other': get_linear_penalty_func
+        'linear_density_default': get_default_density_linear_penalty_func,
+        'linear_latlon_default': get_default_latlon_linear_penalty_func,
+        'linear_depth_default': get_default_depth_linear_penalty_func,
+        'linear_other': get_linear_penalty_func,
+        'exp_density_default': get_default_density_exp_penalty_func,
+        'exp_latlon_default': get_default_latlon_exp_penalty_func,
+        'exp_depth_default': get_default_depth_exp_penalty_func,
+        'exp_other': get_exponential_penalty_func
     }
 
-    PARAMS = ['intercept', 'slope']
+    PARAMS = ['intercept', 'slope', 'alpha', 'beta']
 
 
-class EndMemExpPenaltyFunc(object):
+class EndMemExpPenaltyFunc(AbstractPenaltyFunc):
     
     #mapping from spectype to factory functions that manufacture the
     # penalty functions
