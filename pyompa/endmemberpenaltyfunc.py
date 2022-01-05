@@ -3,10 +3,31 @@ import numpy as np
 from .util import assert_in, assert_compatible_keys, assert_has_keys 
 
 
-def get_exponential_from_bounds_func(alpha, beta,
-                                     lowerbound=-np.inf,
-                                     upperbound=np.inf,
-                                     magnitudelimit=10000):
+def get_linear_penalty_func(slope, intercept=0.0, lowerbound=-np.inf,
+                            upperbound=np.inf, magnitudelimit=10000):
+    assert upperbound > lowerbound, (upperbound, lowerbound)
+    def func(x):
+        transformed_x =\
+            np.maximum(0, np.maximum(lowerbound-x, x-upperbound))
+        constant = (transformed_x > 0.0)*intercept
+        return np.minimum(magnitudelimit, constant + slope*above_zero_filter)
+    return func
+
+
+def get_default_density_linear_penalty_func(slope=0.5, **kwargs):
+    return get_linear_penalty_func(slope=slope, **kwargs)
+
+
+def get_default_latlon_linear_penalty_func(slope=0.05, **kwargs):
+    return get_linear_penalty_func(slope=slope, **kwargs)
+
+
+def get_default_depth_linear_penalty_func(slope=0.001, **kwargs):
+    return get_linear_penalty_func(slope=slope, **kwargs)
+
+
+def get_exponential_penalty_func(alpha, beta, lowerbound=-np.inf,
+                                 upperbound=np.inf, magnitudelimit=10000):
     #the magnitude limit is there to prevent problems with condition number
     # and optimization later on
     assert upperbound > lowerbound, (upperbound, lowerbound)
@@ -58,15 +79,7 @@ def get_combined_penalty_func(colname_to_penaltyfunc):
     return penalty_func
 
 
-class EndMemExpPenaltyFunc(object):
-    
-    #mapping from spectype to factory functions that manufacture the
-    # penalty functions
-    SPECTYPE_TO_FACTORYFUNC = {
-        'density_default': get_default_density_exp_penalty_func,
-        'latlon_default': get_default_latlon_exp_penalty_func,
-        'depth_default': get_default_depth_exp_penalty_func,
-        'other': get_exponential_from_bounds_func}
+class PenaltyFunc(object)
 
     def __init__(self, spec):
         self.spec = spec 
@@ -77,7 +90,7 @@ class EndMemExpPenaltyFunc(object):
         for colname,spec_for_col in self.spec.items():
             assert_compatible_keys(
               the_dict=spec_for_col,
-              allowed=['type', 'lowerbound', 'upperbound', 'alpha', 'beta'],
+              allowed=['type', 'lowerbound', 'upperbound']+self.PARAMS,
               errorprefix="Problem with "+str(colname)+" penalty config: ") 
             assert_has_keys(the_dict=spec_for_col, required=["type"],
                             errorprefix="Problem with "+str(colname)
@@ -99,5 +112,27 @@ class EndMemExpPenaltyFunc(object):
             colname_to_penaltyfunc[colname] = penalty_func
         self.penalty_func = get_combined_penalty_func(colname_to_penaltyfunc)
 
-    def __call__(self, *args, **kwargs):
-        return self.penalty_func(*args, **kwargs) 
+
+class LinearPenaltyFunc(object):
+
+    SPECTYPE_TO_FACTORYFUNC = {
+        'density_default': get_default_density_linear_penalty_func,
+        'latlon_default': get_default_latlon_linear_penalty_func,
+        'depth_default': get_default_depth_linear_penalty_func,
+        'other': get_linear_penalty_func
+    }
+
+    PARAMS = ['intercept', 'slope']
+
+
+class EndMemExpPenaltyFunc(object):
+    
+    #mapping from spectype to factory functions that manufacture the
+    # penalty functions
+    SPECTYPE_TO_FACTORYFUNC = {
+        'density_default': get_default_density_exp_penalty_func,
+        'latlon_default': get_default_latlon_exp_penalty_func,
+        'depth_default': get_default_depth_exp_penalty_func,
+        'other': get_exponential_penalty_func}
+
+    PARAMS = ['alpha', 'beta']
