@@ -10,7 +10,7 @@ def get_linear_penalty_func(slope, intercept=0.0, lowerbound=-np.inf,
         transformed_x =\
             np.maximum(0, np.maximum(lowerbound-x, x-upperbound))
         constant = (transformed_x > 0.0)*intercept
-        return np.minimum(magnitudelimit, constant + slope*above_zero_filter)
+        return np.minimum(magnitudelimit, constant + slope*transformed_x)
     return func
 
 
