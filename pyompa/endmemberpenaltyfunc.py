@@ -26,7 +26,7 @@ def get_default_depth_linear_penalty_func(slope=0.001, **kwargs):
     return get_linear_penalty_func(slope=slope, **kwargs)
 
 
-def get_exponential_penalty_func(alpha, beta, lowerbound=-np.inf,
+def get_exp_penalty_func(alpha, beta, lowerbound=-np.inf,
                                  upperbound=np.inf, magnitudelimit=10000):
     #the magnitude limit is there to prevent problems with condition number
     # and optimization later on
@@ -39,21 +39,21 @@ def get_exponential_penalty_func(alpha, beta, lowerbound=-np.inf,
     #    alpha*np.maximum(0, np.maximum(lowerbound-x, x-upperbound)))-1))
 
 
-#same as get_exponential_from_bounds_func but with defaults for alpha and beta
+#same as get_exp_penalty_func but with defaults for alpha and beta
 def get_default_density_exp_penalty_func(alpha=0.5, beta=1000, **kwargs):
-    return get_exponential_from_bounds_func(
+    return get_exp_penalty_func(
             alpha=alpha, beta=beta, **kwargs) 
 
 
-#same as get_exponential_from_bounds_func but with defaults for alpha and beta
+#same as get_exp_penalty_func but with defaults for alpha and beta
 def get_default_latlon_exp_penalty_func(alpha=0.05, beta=100, **kwargs):
-    return get_exponential_from_bounds_func(
+    return get_exp_penalty_func(
             alpha=alpha, beta=beta, **kwargs) 
 
 
-#same as get_exponential_from_bounds_func but with defaults for alpha and beta
+#same as get_exp_penalty_func but with defaults for alpha and beta
 def get_default_depth_exp_penalty_func(alpha=0.001, beta=50, **kwargs):
-    return get_exponential_from_bounds_func(
+    return get_exp_penalty_func(
             alpha=alpha, beta=beta, **kwargs) 
 
 
