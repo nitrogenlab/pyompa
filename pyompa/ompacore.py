@@ -727,12 +727,38 @@ class OMPAProblem(object):
     def prep_endmember_usagepenalty_mat(self, endmember_names):
         endmember_usagepenalty = np.zeros((len(self.obs_df),
                                            len(endmember_names)))
+        unmatched_endmembernames = set(
+            self.endmembername_to_usagepenalty.keys())
+
+        #do a mapping in case the endmember penalties were specified with
+        # prefixes
+        prefix_mapping = {}
+        for endmembernameprefix in self.endmembername_to_usagepenalty:
+            if endmembernameprefix.endswith("*"):
+                for endmembername in endmember_names:
+                    #check for match to everything except *
+                    if endmembername.startswith(endmembernameprefix[:-1]):
+                        assert endmembername not in prefix_mapping, (
+                          "Conflicting/duplicate maps for "+endmembername
+                          +": "+endmembernameprefix+" and "
+                          +prefix_mapping[endmembername])
+                        prefix_mapping[endmembername] = endmembernameprefix
+                        print("Found match between "+endmembername
+                              +" and prefix "+endmembernameprefix)
+
         for endmemberidx,endmembername in enumerate(endmember_names):
             if endmembername in self.endmembername_to_usagepenalty:
+                unmatched_endmembernames.remove(endmembername)
                 endmember_usagepenalty[:,endmemberidx] =\
                     self.endmembername_to_usagepenalty[endmembername]
+            else:
+                if endmembername in prefix_mapping:
+                    endmember_usagepenalty[:,endmemberidx] =\
+                        self.endmembername_to_usagepenalty[
+                         prefix_mapping[endmembername]]
+                 
         #print a warning if specified a usage penalty that was not used
-        for endmembername in self.endmembername_to_usagepenalty:
+        for endmembername in unmatched_endmembernames:
             if endmembername not in endmember_names:
                 print("---WARNING!---")
                 print("You specified a usage penalty for "

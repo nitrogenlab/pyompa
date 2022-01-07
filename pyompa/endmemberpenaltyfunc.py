@@ -14,15 +14,15 @@ def get_linear_penalty_func(slope, intercept=0.0, lowerbound=-np.inf,
     return func
 
 
-def get_default_density_linear_penalty_func(slope=0.5, **kwargs):
+def get_default_density_linear_penalty_func(slope=100, **kwargs):
     return get_linear_penalty_func(slope=slope, **kwargs)
 
 
-def get_default_latlon_linear_penalty_func(slope=0.05, **kwargs):
+def get_default_latlon_linear_penalty_func(slope=10, **kwargs):
     return get_linear_penalty_func(slope=slope, **kwargs)
 
 
-def get_default_depth_linear_penalty_func(slope=0.001, **kwargs):
+def get_default_depth_linear_penalty_func(slope=1, **kwargs):
     return get_linear_penalty_func(slope=slope, **kwargs)
 
 
