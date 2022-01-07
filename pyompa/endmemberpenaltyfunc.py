@@ -112,6 +112,9 @@ class AbstractPenaltyFunc(object):
             colname_to_penaltyfunc[colname] = penalty_func
         self.penalty_func = get_combined_penalty_func(colname_to_penaltyfunc)
 
+    def __call__(self, *args, **kwargs):
+        return self.penalty_func(*args, **kwargs)
+
 
 class GeneralPenaltyFunc(AbstractPenaltyFunc):
 
