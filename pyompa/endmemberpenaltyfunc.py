@@ -79,7 +79,7 @@ def get_combined_penalty_func(colname_to_penaltyfunc):
     return penalty_func
 
 
-class AbstractPenaltyFunc(object)
+class AbstractPenaltyFunc(object):
 
     def __init__(self, spec):
         self.spec = spec 
