@@ -126,7 +126,7 @@ class GeneralPenaltyFunc(AbstractPenaltyFunc):
         'exp_density_default': get_default_density_exp_penalty_func,
         'exp_latlon_default': get_default_latlon_exp_penalty_func,
         'exp_depth_default': get_default_depth_exp_penalty_func,
-        'exp_other': get_exponential_penalty_func
+        'exp_other': get_exp_penalty_func
     }
 
     PARAMS = ['intercept', 'slope', 'alpha', 'beta']
@@ -140,6 +140,6 @@ class EndMemExpPenaltyFunc(AbstractPenaltyFunc):
         'density_default': get_default_density_exp_penalty_func,
         'latlon_default': get_default_latlon_exp_penalty_func,
         'depth_default': get_default_depth_exp_penalty_func,
-        'other': get_exponential_penalty_func}
+        'other': get_exp_penalty_func}
 
     PARAMS = ['alpha', 'beta']
