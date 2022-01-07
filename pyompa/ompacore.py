@@ -727,7 +727,7 @@ class OMPAProblem(object):
     def prep_endmember_usagepenalty_mat(self, endmember_names):
         endmember_usagepenalty = np.zeros((len(self.obs_df),
                                            len(endmember_names)))
-        unmatched_endmembernames = set(
+        unmatched_penaltyendmembernames = set(
             self.endmembername_to_usagepenalty.keys())
 
         #do a mapping in case the endmember penalties were specified with
@@ -748,18 +748,19 @@ class OMPAProblem(object):
 
         for endmemberidx,endmembername in enumerate(endmember_names):
             if endmembername in self.endmembername_to_usagepenalty:
-                unmatched_endmembernames.remove(endmembername)
+                unmatched_penaltyendmembernames.remove(endmembername)
                 endmember_usagepenalty[:,endmemberidx] =\
                     self.endmembername_to_usagepenalty[endmembername]
             else:
                 if endmembername in prefix_mapping:
-                    unmatched_endmembernames.remove(endmembername)
+                    if prefix_mapping in unmatched_endmembernames:
+                        unmatched_penaltyendmembernames.remove(prefix_mapping)
                     endmember_usagepenalty[:,endmemberidx] =\
                         self.endmembername_to_usagepenalty[
                          prefix_mapping[endmembername]]
                  
         #print a warning if specified a usage penalty that was not used
-        for endmembername in unmatched_endmembernames:
+        for endmembername in unmatched_penaltyendmembernames:
             if endmembername not in endmember_names:
                 print("---WARNING!---")
                 print("You specified a usage penalty for "
