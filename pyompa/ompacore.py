@@ -753,6 +753,7 @@ class OMPAProblem(object):
                     self.endmembername_to_usagepenalty[endmembername]
             else:
                 if endmembername in prefix_mapping:
+                    unmatched_endmembernames.remove(endmembername)
                     endmember_usagepenalty[:,endmemberidx] =\
                         self.endmembername_to_usagepenalty[
                          prefix_mapping[endmembername]]
