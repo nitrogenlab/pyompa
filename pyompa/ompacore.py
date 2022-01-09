@@ -263,7 +263,8 @@ class OMPASoln(ExportToCsvMixin):
         self.__dict__.update(kwargs)
 
     def core_quantify_ambiguity_via_residual_limits(self,
-        obj_weights, max_resids, target_endmem_fracs=None, verbose=False,
+        obj_weights, max_resids, retain_original_penalties=True,
+        target_endmem_fracs=None, verbose=False,
         max_iter=100000):
         #obj_weights can either be a single vector (e.g. for minimization/
         # maximization), or a matrix (for trying to find a solution
@@ -277,8 +278,11 @@ class OMPASoln(ExportToCsvMixin):
             assert target_endmem_fracs.shape[1]==obj_weights.shape[0]
             assert target_endmem_fracs.shape[0]==len(self.endmember_fractions)
         endmember_names = self.endmember_names
-        endmember_usagepenalty =\
-            self.ompa_problem.prep_endmember_usagepenalty_mat(endmember_names)
+
+        if (retain_original_penalties):
+            endmember_usagepenalty =\
+                self.ompa_problem.prep_endmember_usagepenalty_mat(
+                      endmember_names)
 
         #Prepare A (from the original omp problem)
         conversion_ratio_rows =\
@@ -317,7 +321,8 @@ class OMPASoln(ExportToCsvMixin):
             assert num_endmembers==len(endmember_names)
             if (num_converted_variables > 0):
                 obs_orig_converted_vars = self.converted_variables[obs_idx] 
-            obs_usagepenalty = endmember_usagepenalty[obs_idx]
+            if (retain_original_penalties):
+                obs_usagepenalty = endmember_usagepenalty[obs_idx]
             obs_b = omp_b[obs_idx]
 
             obs_orig_pred = obs_orig_endmem_fracs@endmem_mat
@@ -343,7 +348,7 @@ class OMPASoln(ExportToCsvMixin):
                   ([np.concatenate(
                      [obs_usagepenalty,
                       np.zeros(num_converted_variables)])[None,:]]
-                   if target_endmem_fracs is None else [])
+                   if retain_original_penalties else [])
                   #positive residual cap, negative residual cap
                   + [omp_A.T, -omp_A.T]
                   )
@@ -352,7 +357,7 @@ class OMPASoln(ExportToCsvMixin):
                     # target_endmem_fracs is not specified)
                    ([np.array([
                        np.sum(obs_orig_endmem_fracs*obs_usagepenalty)])]
-                    if target_endmem_fracs is None else [])
+                    if retain_original_penalties else [])
                    + [
                     #positive residual cap
                     obs_b + obs_upper_resids,
@@ -465,7 +470,8 @@ class OMPASoln(ExportToCsvMixin):
              obs_df=self.obs_df,
              param_names=self.param_names,
              endmembername_to_usagepenalty=\
-                self.endmembername_to_usagepenalty,
+                (self.endmembername_to_usagepenalty if
+                 retain_original_penalties else {}),
              perobs_obj=perobs_obj)
 
         return new_ompasoln 
