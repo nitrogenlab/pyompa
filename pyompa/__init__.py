@@ -7,7 +7,7 @@ from . import parse_config
 from . import util
 from .ompacore import OMPAProblem, ConvertedParamGroup
 from .thermocline_array import ThermoclineArrayOMPAProblem 
-from .endmemberpenaltyfunc import EndMemExpPenaltyFunc
+from .endmemberpenaltyfunc import EndMemExpPenaltyFunc, GeneralPenaltyFunc
 from .plotting import (plot_ompasoln_endmember_fractions,
                        plot_ompasoln_residuals,
                        plot_ompasoln_endmember_usagepenalties,
