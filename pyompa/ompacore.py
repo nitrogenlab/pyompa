@@ -264,8 +264,9 @@ class OMPASoln(ExportToCsvMixin):
 
     def core_quantify_ambiguity_via_residual_limits(self,
         obj_weights, max_resids, retain_original_penalties=True,
-        target_endmem_fracs=None, verbose=False,
+        target_endmem_fracs=None, verbose=False, return_bailedon_indices=False,
         max_iter=100000):
+
         #obj_weights can either be a single vector (e.g. for minimization/
         # maximization), or a matrix (for trying to find a solution
         # that resembels a target soln e.g. one obtained from OCIM
@@ -313,6 +314,8 @@ class OMPASoln(ExportToCsvMixin):
             new_perobs_converted_vars = None
         new_perobs_resid = []
         perobs_obj = []
+
+        obs_idx_bailedon = [] #keep track of the indices that are bailed on
         for obs_idx in range(len(self.endmember_fractions)):
             if (verbose):
                 print("On obs",obs_idx,"out of",len(self.endmember_fractions))
@@ -417,6 +420,7 @@ class OMPASoln(ExportToCsvMixin):
             new_endmem_fracs, new_converted_vars = solns[np.argmin(objs)]
             if (new_endmem_fracs is None):
                 print("Warning: solver didn't find a soln, using original")
+                obs_idx_bailedon.append(obs_idx) 
                 new_endmem_fracs = obs_orig_endmem_fracs
                 new_converted_vars = obs_orig_converted_vars
             assert new_endmem_fracs is not None
@@ -474,7 +478,10 @@ class OMPASoln(ExportToCsvMixin):
                  retain_original_penalties else {}),
              perobs_obj=perobs_obj)
 
-        return new_ompasoln 
+        if (return_bailedon_indices):
+            return new_ompasoln, obs_idx_bailedon  
+        else:
+            return new_ompasoln 
 
     #def core_quantify_ambiguity_via_nullspace(self, obj_weights, verbose=False):
     #    #obj_weights should be an array of weights that define the objective
