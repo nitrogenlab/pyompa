@@ -2,6 +2,8 @@ from __future__ import division, print_function
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
+from .util import collapse_endmembers_by_idxmapping
+from collections import OrderedDict
 
 
 def plot_endmember_usagepenalties(endmembername_to_usagepenalty,
@@ -39,14 +41,17 @@ def plot_ompasoln_endmember_usagepenalties(
 
 
 def plot_endmember_fractions(xaxis_vals, xaxis_label, yaxis_vals, yaxis_label,
-        endmember_fractions, endmembernames, total_oxygen_deficit,
-        effective_conversion_ratios, converted_param_names,
+        endmember_fractions, endmembernames,
+        groupname_to_totalconvertedvariable,
+        groupname_to_effectiveconversionratios,
         flip_y=True):
     num_endmembers = endmember_fractions.shape[1]
     num_figs = (num_endmembers +
-                (1+len(converted_param_names)
-                 if total_oxygen_deficit is not None else 0))
-    fig, ax = plt.subplots(nrows=1, ncols=num_figs, figsize=(5*num_figs,4))
+                len(groupname_to_totalconvertedvariable) +
+                sum([len(x) for x in
+                     groupname_to_effectiveconversionratios.values()]))
+    fig, ax = plt.subplots(nrows=1, ncols=num_figs,
+                           figsize=(5*num_figs,4))
     for i in range(num_endmembers):
         plt.sca(ax[i])
         plt.scatter(xaxis_vals, yaxis_vals, c=endmember_fractions[:,i])
@@ -56,45 +61,63 @@ def plot_endmember_fractions(xaxis_vals, xaxis_label, yaxis_vals, yaxis_label,
         if (flip_y):
             plt.ylim(plt.ylim()[1], plt.ylim()[0])
         plt.colorbar()
-        plt.clim(0.0, 1.0)
+        plt.clim(0.0, max(1.0,np.max(endmember_fractions[:,i])) )
         plt.title(endmembernames[i])
-    if (total_oxygen_deficit is not None):
-        plt.sca(ax[num_endmembers])
-        plt.scatter(xaxis_vals, yaxis_vals, c=total_oxygen_deficit,
-                    cmap="RdBu")
-        max_abs_deficit = np.max(np.abs(total_oxygen_deficit))
-        if (flip_y):
-            plt.ylim(plt.ylim()[1], plt.ylim()[0])
-        plt.colorbar()
-        plt.clim(-max_abs_deficit, max_abs_deficit)
-        plt.xlabel(xaxis_label)
-        plt.title("oxygen deficit")
-    for i in range(len(converted_param_names)):
-        plt.sca(ax[num_endmembers+1+i])
+    plotidx = num_endmembers
+    for groupname in groupname_to_totalconvertedvariable:
+        plt.sca(ax[plotidx])
+        plotidx += 1
+        convar_vals = groupname_to_totalconvertedvariable[groupname]
         plt.scatter(xaxis_vals, yaxis_vals,
-                    c=1.0/effective_conversion_ratios[:,i])
+                    c=convar_vals,
+                    cmap=("RdBu"))
+        max_abs_convval = np.max(np.abs(convar_vals))
         if (flip_y):
             plt.ylim(plt.ylim()[1], plt.ylim()[0])
         plt.colorbar()
+        plt.clim(-max_abs_convval, max_abs_convval)
         plt.xlabel(xaxis_label)
-        plt.title(converted_param_names[i]
-                  +" \nconversion ratio (relative to oxygen)")
+        plt.title(groupname)
+        effective_conversion_ratios =\
+            groupname_to_effectiveconversionratios[groupname]
+        for converted_param in effective_conversion_ratios:
+            plt.sca(ax[plotidx])
+            plotidx += 1
+            plt.scatter(xaxis_vals, yaxis_vals,
+                        c=effective_conversion_ratios[converted_param])
+            if (flip_y):
+                plt.ylim(plt.ylim()[1], plt.ylim()[0])
+            plt.colorbar()
+            plt.xlabel(xaxis_label)
+            plt.title(converted_param+":"+groupname+" ratio")
     plt.show()
 
 
 def plot_ompasoln_endmember_fractions(ompa_soln, xaxis_colname,
-                                      yaxis_colname, flip_y=True):
+                                      yaxis_colname, flip_y=True,
+                                      group_endmembers=True):
+
+    if (group_endmembers):
+        endmembername_to_indices = ompa_soln.endmembername_to_indices
+        endmember_names = list(endmembername_to_indices.keys())
+        endmember_fractions = collapse_endmembers_by_idxmapping(
+            endmember_fractions=ompa_soln.endmember_fractions,
+            endmembername_to_indices=endmembername_to_indices) 
+    else:
+        endmember_names = ompa_soln.endmember_names 
+        endmember_fractions = ompa_soln.endmember_fractions
+
     plot_endmember_fractions(
         xaxis_vals=ompa_soln.obs_df[xaxis_colname],
         xaxis_label=xaxis_colname,
         yaxis_vals=ompa_soln.obs_df[yaxis_colname],
         yaxis_label=yaxis_colname,
-        endmember_fractions=ompa_soln.endmember_fractions,
-        endmembernames=list(
-            ompa_soln.endmember_df[ompa_soln.endmember_name_column]),
-        total_oxygen_deficit=ompa_soln.total_oxygen_deficit,
-        effective_conversion_ratios=ompa_soln.effective_conversion_ratios,
-        converted_param_names=ompa_soln.converted_params_to_use,
+        endmember_fractions=endmember_fractions,
+        endmembernames=endmember_names,
+        groupname_to_totalconvertedvariable=
+         ompa_soln.groupname_to_totalconvertedvariable,
+        groupname_to_effectiveconversionratios=
+         ompa_soln.groupname_to_effectiveconversionratios,
         flip_y=flip_y)
 
 
@@ -124,77 +147,23 @@ def plot_ompasoln_residuals(ompa_soln, xaxis_colname,
                             yaxis_colname, flip_y=True):
     plot_residuals(
         param_residuals=ompa_soln.param_residuals,
-        param_names=(ompa_soln.conserved_params_to_use
-                      + ompa_soln.converted_params_to_use),
+        param_names=ompa_soln.param_names,
         xaxis_vals=ompa_soln.obs_df[xaxis_colname],
         xaxis_label=xaxis_colname,
         yaxis_vals=ompa_soln.obs_df[yaxis_colname],
         yaxis_label=yaxis_colname, flip_y=flip_y)
 
 
-def plot_thermocline_endmember_fractions(ompa_problems_arr,
-                                         xaxis_colname, yaxis_colname,
-                                         flip_y=True):
-    #first, check to make sure all entries in ompa_problems_arr have the same
-    # number of endmembers; the assert statement will throw an error if
-    # that is not the case
-
-    endmember_name_column = ompa_problems_arr[0].endmember_name_column
-    num_endmembers = ompa_problems_arr[0].endmember_fractions.shape[1]
-    assert all([x.endmember_fractions.shape[1]==num_endmembers
-                for x in ompa_problems_arr])
-
-    xaxis_vals = np.concatenate([
-            np.array(x.obs_df[xaxis_colname]) for x in ompa_problems_arr])
-    yaxis_vals = np.concatenate([
-        np.array(x.obs_df[yaxis_colname]) for x in ompa_problems_arr])
-    endmember_fractions = np.concatenate([
-            x.endmember_fractions for x in ompa_problems_arr], axis=0)
-    endmembernames = list(ompa_problems_arr[0].endmember_df[
-                            endmember_name_column])
-    converted_param_names = ompa_problems_arr[0].converted_params_to_use
-    if (ompa_problems_arr[0].total_oxygen_deficit is not None):
-        total_oxygen_deficit = np.concatenate([x.total_oxygen_deficit
-                                           for x in ompa_problems_arr], axis=0)
-        effective_conversion_ratios = np.concatenate([
-              x.effective_conversion_ratios for x in ompa_problems_arr], axis=0)
-    else:
-        total_oxygen_deficit = None
-        effective_conversion_ratios = None
-
-    plot_endmember_fractions(
-        xaxis_vals=xaxis_vals,
-        yaxis_vals=yaxis_vals,
-        xaxis_label=xaxis_colname,
-        yaxis_label=yaxis_colname,
-        endmember_fractions=endmember_fractions,
-        endmembernames=endmembernames,
-        total_oxygen_deficit=total_oxygen_deficit,
-        converted_param_names=converted_param_names,
-        effective_conversion_ratios=effective_conversion_ratios,
-        flip_y=flip_y)
+#deprecated now; api of ThermoclineArraySoln was updated such that can
+# just call plot_ompasoln_endmember_fractions
+def plot_thermocline_endmember_fractions(*args, **kwargs):
+    return plot_ompasoln_endmember_fractions(*args, **kwargs)
 
 
-def plot_thermocline_residuals(ompa_problems_arr, xaxis_colname, yaxis_colname,
-                               flip_y=True):
-
-    param_residuals = np.concatenate([
-            x.param_residuals for x in ompa_problems_arr], axis=0)
-    param_names = (ompa_problems_arr[0].conserved_params_to_use
-                     +ompa_problems_arr[0].converted_params_to_use)
-    xaxis_vals = np.concatenate([
-            np.array(x.obs_df[xaxis_colname]) for x in ompa_problems_arr])
-    yaxis_vals = np.concatenate([
-        np.array(x.obs_df[yaxis_colname]) for x in ompa_problems_arr])
-
-    plot_residuals(
-        param_residuals=param_residuals,
-        param_names=param_names,
-        xaxis_vals=xaxis_vals,
-        yaxis_vals=yaxis_vals,
-        xaxis_label=xaxis_colname,
-        yaxis_label=yaxis_colname,
-        flip_y=flip_y)
+#deprecated now; api of ThermoclineArraySoln was updated such that can
+# just call plot_ompasoln_residuals
+def plot_thermocline_residuals(*args, **kwargs):
+    return plot_ompasoln_residuals(*args, **kwargs)
 
 
 def nozero_xaxis(field_name):

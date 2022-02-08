@@ -1,7 +1,13 @@
 from __future__ import division, print_function
-from .ompacore import OMPAProblem 
+from . import ompacore
+from . import thermocline_array
+from . import endmemberpenaltyfunc
+from . import plotting
+from . import parse_config
+from . import util
+from .ompacore import OMPAProblem, ConvertedParamGroup
 from .thermocline_array import ThermoclineArrayOMPAProblem 
-from .endmemberpenaltyfunc import EndMemExpPenaltyFunc
+from .endmemberpenaltyfunc import EndMemExpPenaltyFunc, GeneralPenaltyFunc
 from .plotting import (plot_ompasoln_endmember_fractions,
                        plot_ompasoln_residuals,
                        plot_ompasoln_endmember_usagepenalties,
