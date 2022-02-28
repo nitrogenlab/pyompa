@@ -905,7 +905,7 @@ class OMPAProblem(object):
         print("param weighting:", weighting)
         if (self.standardize_by_watertypes):
             weighting = weighting/param_std
-            print("effective weighting:", weighting/param_std)
+            print("effective weighting:", weighting)
         orig_A = A.copy()
         orig_b = b
         if (self.standardize_by_watertypes):
@@ -992,6 +992,7 @@ class OMPAProblem(object):
                     groupname_to_totalconvertedvariable,
                   groupname_to_effectiveconversionratios=
                     groupname_to_effectiveconversionratios,
+                  effective_param_weighting=weighting
                   #nullspace_A=nullspace_A
                 )
 
