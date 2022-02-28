@@ -153,7 +153,7 @@ def plot_residuals(param_residuals, param_names, xaxis_vals, xaxis_label,
                                             axis=1) 
         plt.scatter(x=xaxis_vals,
                     y=yaxis_vals,
-                    c=sum_squared_weighted_resid,
+                    c=np.log(1+sum_squared_weighted_resid),
                     cmap="viridis")
         plt.colorbar()
         plt.xlabel(xaxis_label)
@@ -161,7 +161,7 @@ def plot_residuals(param_residuals, param_names, xaxis_vals, xaxis_label,
             plt.ylabel(yaxis_label)
         if (flip_y):
             plt.ylim(plt.ylim()[1], plt.ylim()[0])
-        plt.title("Sum of squared\nweighted residuals")
+        plt.title("(log 1+x) Sum of squared\nweighted residuals")
 
     plt.show()
 
