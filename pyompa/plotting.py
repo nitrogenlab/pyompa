@@ -176,7 +176,7 @@ def plot_ompasoln_residuals(ompa_soln, xaxis_colname,
         xaxis_label=xaxis_colname,
         yaxis_vals=ompa_soln.obs_df[yaxis_colname],
         yaxis_label=yaxis_colname, flip_y=flip_y,
-        param_residuals_weights=ompa_soln.effective_param_weighting)
+        param_residual_weights=ompa_soln.effective_param_weighting)
 
 
 #deprecated now; api of ThermoclineArraySoln was updated such that can
