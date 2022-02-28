@@ -987,7 +987,7 @@ class OMPAProblem(object):
                   endmember_fractions=endmember_fractions,
                   converted_variables=converted_variables,
                   resid_wsumsq=np.sum(perobs_weighted_resid_sq),
-                  perobs_resid_wsumsq=perobs_weighted_resid_sq,
+                  perobs_weighted_resid_sq=perobs_weighted_resid_sq,
                   param_residuals=param_residuals,
                   groupname_to_totalconvertedvariable=
                     groupname_to_totalconvertedvariable,
