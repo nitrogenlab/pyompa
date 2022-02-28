@@ -123,9 +123,9 @@ def plot_ompasoln_endmember_fractions(ompa_soln, xaxis_colname,
 
 def plot_residuals(param_residuals, param_names, xaxis_vals, xaxis_label,
                    yaxis_vals, yaxis_label, flip_y=True,
-                   param_residual_weights=None):
+                   perobs_weighted_resid_sq=None):
     num_params = param_residuals.shape[1]
-    ncols = num_params + (1 if param_residual_weights is not None else 0)
+    ncols = num_params + (1 if perobs_weighted_resid_sq is not None else 0)
     fig, ax = plt.subplots(nrows=1,
                            ncols=ncols,
                            figsize=(5*ncols,4))
@@ -145,15 +145,12 @@ def plot_residuals(param_residuals, param_names, xaxis_vals, xaxis_label,
             plt.ylim(plt.ylim()[1], plt.ylim()[0])
         plt.title(param_names[i])
 
-    if (param_residual_weights is not None):
+    if (perobs_weighted_resid_sq is not None):
         plt.sca(ax[param_residuals.shape[1]]) 
         #sum of the squared weighted resids
-        sum_squared_weighted_resid = np.sum(np.square(param_residuals
-                                            *param_residual_weights[None,:]),
-                                            axis=1) 
         plt.scatter(x=xaxis_vals,
                     y=yaxis_vals,
-                    c=np.log(1+sum_squared_weighted_resid),
+                    c=np.log10(1+perobs_weighted_resid_sq),
                     cmap="viridis")
         plt.colorbar()
         plt.xlabel(xaxis_label)
@@ -161,7 +158,7 @@ def plot_residuals(param_residuals, param_names, xaxis_vals, xaxis_label,
             plt.ylabel(yaxis_label)
         if (flip_y):
             plt.ylim(plt.ylim()[1], plt.ylim()[0])
-        plt.title("(log 1+x) Sum of squared\nweighted residuals")
+        plt.title("(log_10 1+x) param resid in objective")
 
     plt.show()
 
@@ -175,7 +172,7 @@ def plot_ompasoln_residuals(ompa_soln, xaxis_colname,
         xaxis_label=xaxis_colname,
         yaxis_vals=ompa_soln.obs_df[yaxis_colname],
         yaxis_label=yaxis_colname, flip_y=flip_y,
-        param_residual_weights=ompa_soln.effective_param_weighting)
+        perobs_weighted_resid_sq=ompa_soln.perobs_weighted_resid_sq)
 
 
 #deprecated now; api of ThermoclineArraySoln was updated such that can
