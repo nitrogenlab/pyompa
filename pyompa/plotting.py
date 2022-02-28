@@ -125,11 +125,10 @@ def plot_residuals(param_residuals, param_names, xaxis_vals, xaxis_label,
                    yaxis_vals, yaxis_label, flip_y=True,
                    param_residual_weights=None):
     num_params = param_residuals.shape[1]
-    ncols = num_params + (1 if param_residual_weights is not None
-                          else 0)
+    ncols = num_params + (1 if param_residual_weights is not None else 0)
     fig, ax = plt.subplots(nrows=1,
-                           ncols=num_cols,
-                           figsize=(5*num_cols,4))
+                           ncols=ncols,
+                           figsize=(5*ncols,4))
     for i in range(param_residuals.shape[1]):
         plt.sca(ax[i])
         param_resid_maxabs = np.max(np.abs(param_residuals[:,i]))
