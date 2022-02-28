@@ -153,7 +153,7 @@ def plot_residuals(param_residuals, param_names, xaxis_vals, xaxis_label,
                                             axis=1) 
         plt.scatter(x=xaxis_vals,
                     y=yaxis_vals,
-                    c=param_residuals[:,i],
+                    c=sum_squared_weighted_resid,
                     cmap="viridis")
         plt.colorbar()
         plt.xlabel(xaxis_label)
