@@ -1026,7 +1026,7 @@ class OMPAProblem(object):
                 pairs_matrix=None,
                 endmember_usagepenalty=endmember_usagepenalty[i:i+batch_size],
                 conversion_sign_constraints=
-                 conversion_sign_constraints[i:i+batch_size],
+                 (conversion_sign_constraints[i:i+batch_size] if (conversion_sign_constraints is not None) else None),
                 smoothness_lambda=None, max_iter=max_iter, verbose=verbose)
             fixed_x.append(fixed_x_batch)
             endmember_fractions.append(endmember_fractions_batch)            
