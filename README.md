@@ -1,6 +1,8 @@
 # pyompa
 This is a python package for OMP analysis. A preprint describing the mathematical formulation is available [here](https://essopenarchive.org/doi/full/10.1002/essoar.10507053.4). If you encounter issues while using this package, please contact Avanti Shrikumar (avanti [at] cs [dot] stanford [dot] edu) or Professor Karen Casciotti (kcasciot [at] stanford [dot] edu).
 
+For code that applied pyompa to perform water mass analysis for the GP15 cruise, see [https://github.com/nitrogenlab/GP15_watermassanalysis](https://github.com/nitrogenlab/GP15_watermassanalysis)
+
 Note that this implementation has key upgrades relative to the MATLAB OMP implementation by M. Tomczak; among them, this package models mass conservation with a hard constraint (i.e. it strives for a residual of 0 in the mass conservation equations), it has support for flexible redfield ratios when modeling remineralization, it has support for soft penalties to encode prior knowledge about end-member distributions, and it has functionality for navigating the ambiguity in underdetermined systems.
 
 Please see the examples folder for links to Colab notebooks that demonstrate how to run pyompa, including how to replicate the functionality of the previous MATLAB OMP implementation if desired.
