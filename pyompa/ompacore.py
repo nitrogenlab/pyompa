@@ -441,10 +441,12 @@ class OMPASoln(ExportToCsvMixin):
             new_perobs_resid.append(new_resid)
 
             new_perobs_endmember_fractions.append(new_endmem_fracs)
-            new_perobs_converted_vars.append(new_converted_vars)
+            if new_perobs_converted_vars is not None:
+                new_perobs_converted_vars.append(new_converted_vars)
             perobs_obj.append(obj) 
 
-        new_perobs_converted_vars = np.array(new_perobs_converted_vars)
+        if new_perobs_converted_vars is not None:
+            new_perobs_converted_vars = np.array(new_perobs_converted_vars)
         new_perobs_endmember_fractions =\
             np.array(new_perobs_endmember_fractions)
         perobs_obj = np.array(perobs_obj)
