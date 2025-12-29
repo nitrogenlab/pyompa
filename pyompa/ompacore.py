@@ -914,7 +914,7 @@ class OMPAProblem(object):
         print("param weighting:", weighting)
         if (self.standardize_by_watertypes):
             weighting = weighting/param_std
-            print("effective weighting:", weighting/param_std)
+            print("effective weighting:", weighting)
         orig_A = A.copy()
         orig_b = b
         if (self.standardize_by_watertypes):
@@ -996,11 +996,13 @@ class OMPAProblem(object):
                   endmember_fractions=endmember_fractions,
                   converted_variables=converted_variables,
                   resid_wsumsq=np.sum(perobs_weighted_resid_sq),
+                  perobs_weighted_resid_sq=perobs_weighted_resid_sq,
                   param_residuals=param_residuals,
                   groupname_to_totalconvertedvariable=
                     groupname_to_totalconvertedvariable,
                   groupname_to_effectiveconversionratios=
                     groupname_to_effectiveconversionratios,
+                  #effective_param_weighting=weighting
                   #nullspace_A=nullspace_A
                 )
 
@@ -1033,7 +1035,7 @@ class OMPAProblem(object):
                 pairs_matrix=None,
                 endmember_usagepenalty=endmember_usagepenalty[i:i+batch_size],
                 conversion_sign_constraints=
-                 (conversion_sign_constraints[i:i+batch_size] if conversion_sign_constraints is not None else None),
+                 (conversion_sign_constraints[i:i+batch_size] if (conversion_sign_constraints is not None) else None),
                 smoothness_lambda=None, max_iter=max_iter, verbose=verbose)
             fixed_x.append(fixed_x_batch)
             endmember_fractions.append(endmember_fractions_batch)            
